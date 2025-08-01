@@ -1,8 +1,8 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,25 +11,45 @@ import { useToast } from '@/hooks/use-toast';
 import { quests } from '@/lib/quests';
 import { AppLayout } from '@/components/AppLayout';
 import { Camera } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
+import { ref, set, get } from 'firebase/database';
 
 export default function ScanPage({ params }: { params: { questId: string } }) {
   const router = useRouter();
   const { toast } = useToast();
   const [code, setCode] = useState('');
   const quest = quests.find(q => q.id === params.questId);
+  const { user } = useAuth();
 
-  const handleValidate = () => {
+  const handleValidate = async () => {
     if (quest && code.trim().toUpperCase() === quest.qrCode) {
-      toast({
-        title: 'Success!',
-        description: `You've completed the quest: ${quest.title}`,
-        className: 'bg-primary text-primary-foreground',
-      });
-      router.push(`/quests?completed=${quest.id}`);
+      if(user) {
+        const progressRef = ref(db, `userProgress/${user.uid}`);
+        const snapshot = await get(progressRef);
+        const currentStages = snapshot.val()?.unlockedStages ?? 0;
+        const questIndex = quests.findIndex(q => q.id === quest.id);
+
+        if (questIndex === currentStages) {
+          await set(progressRef, { unlockedStages: currentStages + 1 });
+          toast({
+            title: 'Success!',
+            description: `You've completed the quest: ${quest.title}`,
+            className: 'bg-primary text-primary-foreground',
+          });
+          router.push('/quests');
+        } else {
+           toast({
+            title: 'Quest not available yet',
+            description: 'Please complete the previous quests first.',
+            variant: 'destructive',
+          });
+        }
+      }
     } else {
       toast({
         title: 'Incorrect Code',
-        description: 'That doesn\'t look right. Please try again!',
+        description: 'That\'s a-ok, but please try again!',
         variant: 'destructive',
       });
     }

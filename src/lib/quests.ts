@@ -1,3 +1,4 @@
+
 import { Map, Compass, Camera, Trees, BookOpen } from 'lucide-react';
 import type { Quest } from './types';
 

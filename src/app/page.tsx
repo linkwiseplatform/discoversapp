@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 
 const KakaoIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -18,7 +21,7 @@ function GameInstructionsDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button className="font-headline text-2xl text-primary cursor-pointer hover:underline">게임 방법</button>
+        <button className="font-headline text-lg text-primary cursor-pointer hover:underline">게임 방법</button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -49,19 +52,47 @@ function GameInstructionsDialog() {
 const VALID_COUPON_CODE = 'ADVENTURE24';
 
 export default function Home() {
-  const [step, setStep] = useState<'coupon' | 'login'>('coupon');
   const [couponCode, setCouponCode] = useState('');
+  const [showLogin, setShowLogin] = useState(false);
   const router = useRouter();
+  const { user, loginAnonymously, loading } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (couponCode.trim().toUpperCase() === VALID_COUPON_CODE) {
-      setStep('login');
+    if (user) {
+      router.push('/quests');
     }
-  }, [couponCode]);
-
-  const handleKakaoLogin = () => {
-    router.push('/quests');
+  }, [user, router]);
+  
+  const handleCouponSubmit = async () => {
+    if (couponCode.trim().toUpperCase() === VALID_COUPON_CODE) {
+      const loggedInUser = await loginAnonymously();
+      if (loggedInUser) {
+        router.push('/quests');
+      } else {
+        toast({
+          title: 'Login Failed',
+          description: 'Could not log you in anonymously. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    } else {
+      toast({
+        title: 'Invalid Coupon',
+        description: 'The coupon code is incorrect.',
+        variant: 'destructive',
+      });
+      setCouponCode('');
+    }
   };
+
+  if (loading || user) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <p>Loading...</p>
+        </div>
+    )
+  }
 
   return (
     <div className="relative min-h-screen w-full">
@@ -81,26 +112,20 @@ export default function Home() {
             <CardDescription className="text-base">로그인 정보는 게임 진행을 위해서만 사용됩니다.</CardDescription>
           </CardHeader>
           <CardContent>
-            {step === 'coupon' ? (
               <div className="space-y-4">
                 <Input
                   id="coupon"
                   placeholder="쿠폰코드를 입력하세요"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCouponSubmit()}
                   required
                   className="text-center text-lg"
                 />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center space-y-4 animate-in fade-in">
-                <p className="text-center text-lg">Welcome, Explorer!</p>
-                <Button onClick={handleKakaoLogin} className="w-full bg-[#FEE500] text-[#391B1B] hover:bg-[#FEE500]/90 font-headline text-lg">
-                  <KakaoIcon />
-                  <span>Login with Kakao</span>
+                <Button onClick={handleCouponSubmit} className="w-full">
+                  Enter
                 </Button>
               </div>
-            )}
           </CardContent>
         </Card>
       </div>
