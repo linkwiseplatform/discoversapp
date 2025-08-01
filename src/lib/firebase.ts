@@ -6,12 +6,12 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
-  projectId: "discoversapp",
-  appId: "1:207214786584:web:75ecd930aa0ed8dfe06b6d",
-  storageBucket: "discoversapp.firebasestorage.app",
   apiKey: "AIzaSyAF6_rVv7BXSKRv7VTsJaGbCemoOO7Ir3Q",
   authDomain: "discoversapp.firebaseapp.com",
+  projectId: "discoversapp",
+  storageBucket: "discoversapp.firebasestorage.app",
   messagingSenderId: "207214786584",
+  appId: "1:207214786584:web:a3f9687b3072c7fae06b6d",
   databaseURL: "https://discoversapp-default-rtdb.firebaseio.com"
 };
 
