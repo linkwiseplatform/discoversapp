@@ -141,20 +141,26 @@ function QuestPageContent() {
       return;
     }
 
+    setLoading(true);
+
     const configRef = ref(db, 'config');
     const fetchConfig = async () => {
-        const snapshot = await get(configRef);
-        if (snapshot.exists()) {
-            setGameConfig(snapshot.val());
-        } else {
-            setGameConfig({
-                numberOfStages: 5,
-                quests: Array(5).fill({description: "퀘스트 설명을 설정해주세요.", qrCode: "CHANGE_ME"}),
-                couponTitle: 'Reward Coupon',
-                couponSubtitle: 'Thanks for playing!',
-                adminCode: '0000',
-                gameStartCode: 'START'
-            });
+        try {
+            const snapshot = await get(configRef);
+            if (snapshot.exists()) {
+                setGameConfig(snapshot.val());
+            } else {
+                setGameConfig({
+                    numberOfStages: 5,
+                    quests: Array(5).fill({description: "퀘스트 설명을 설정해주세요.", qrCode: "CHANGE_ME"}),
+                    couponTitle: 'Reward Coupon',
+                    couponSubtitle: 'Thanks for playing!',
+                    adminCode: '0000',
+                    gameStartCode: 'START'
+                });
+            }
+        } catch (error) {
+            console.error("Failed to fetch game config:", error);
         }
     };
 
@@ -169,8 +175,8 @@ function QuestPageContent() {
             setLoading(false);
         });
         return () => unsubscribe();
-    } else { 
-        setUnlockedStages(0);
+    } else if (process.env.NODE_ENV === 'development') {
+        setUnlockedStages(0); // Dev default
         setLoading(false);
     }
 
