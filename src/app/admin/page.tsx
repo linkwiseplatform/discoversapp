@@ -54,7 +54,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   const [config, setConfig] = useState<GameConfig | null>(null);
   const [qrCodeUrls, setQrCodeUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] useState(false);
   
   const [newAdminName, setNewAdminName] = useState('');
   const [newAdminId, setNewAdminId] = useState('');
@@ -390,8 +390,9 @@ export default function AdminPage() {
   }
   
   // In development, bypass login and admin check
-  if (process.env.NODE_ENV === 'development' && user) {
-     return <AdminDashboard currentUser={user} />;
+  if (process.env.NODE_ENV === 'development') {
+    const devUser = user || { uid: 'dev-user', displayName: '개발자' } as User;
+    return <AdminDashboard currentUser={devUser} />;
   }
   
   // In production, require login and admin status
@@ -410,3 +411,5 @@ export default function AdminPage() {
 
   return <AdminDashboard currentUser={user} />;
 }
+
+    
