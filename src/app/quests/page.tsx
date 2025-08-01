@@ -1,23 +1,20 @@
 
 'use client';
 
-import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
+import { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { quests } from '@/lib/quests';
-import type { Character } from '@/lib/types';
-import { CheckCircle2, Lock, ArrowRight, ChevronsRight, RefreshCw, QrCode } from 'lucide-react';
-import { AppLayout } from '@/components/AppLayout';
+import { QrCode, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { ref, onValue, set } from 'firebase/database';
+import { ref, onValue, set, get } from 'firebase/database';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import type { Character, GameConfig } from '@/lib/types';
 
 function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
@@ -104,12 +101,16 @@ const hunterStartPositions = {
 };
 
 const questPositions = [
-    { top: '0%', left: '50%' },   // Stage 1
-    { top: '17%', left: '50%' },  // Stage 2
-    { top: '35%', left: '50%' },  // Stage 3
-    { top: '52%', left: '50%' },  // Stage 4
-    { top: '70%', left: '50%' },  // Stage 5
-    { top: '88%', left: '50%' },  // Stage 6 (placeholder)
+    { top: '0%', left: '50%' },
+    { top: '10.5%', left: '50%' },
+    { top: '21%', left: '50%' },
+    { top: '31.5%', left: '50%' },
+    { top: '42%', left: '50%' },
+    { top: '52.5%', left: '50%' },
+    { top: '63%', left: '50%' },
+    { top: '73.5%', left: '50%' },
+    { top: '84%', left: '50%' },
+    { top: '94.5%', left: '50%' }
 ];
 
 
@@ -119,34 +120,56 @@ function QuestPageContent() {
 
   const [unlockedStages, setUnlockedStages] = useState(0);
   const [character, setCharacter] = useState<Character>('female');
+  const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
   const prevUnlockedStages = usePrevious(unlockedStages);
   const [showConfettiAt, setShowConfettiAt] = useState<{ top: string, left: string } | null>(null);
 
+  const totalStages = gameConfig?.numberOfStages ?? 0;
+
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      setLoading(false);
-      return;
-    }
-    
     if (authLoading) return;
-    if (!user) {
+    if (!user && process.env.NODE_ENV !== 'development') {
       router.replace('/');
       return;
     }
 
-    const progressRef = ref(db, `userProgress/${user.uid}`);
-    const unsubscribe = onValue(progressRef, (snapshot) => {
-      const data = snapshot.val();
-      const stages = data?.unlockedStages ?? 0;
-      setUnlockedStages(stages);
-      setLoading(false);
-    });
+    const configRef = ref(db, 'config');
+    const fetchConfig = async () => {
+        const snapshot = await get(configRef);
+        if (snapshot.exists()) {
+            setGameConfig(snapshot.val());
+        } else {
+            // Fallback for when config is not set in DB
+            setGameConfig({
+                numberOfStages: 5,
+                quests: Array(5).fill({description: "퀘스트 설명을 설정해주세요.", qrCode: "CHANGE_ME"}),
+                couponTitle: 'Reward Coupon',
+                couponSubtitle: 'Thanks for playing!',
+                adminCode: '0000',
+                gameStartCode: 'START'
+            });
+        }
+    };
 
-    return () => unsubscribe();
+    fetchConfig();
+
+    if (user) {
+        const progressRef = ref(db, `userProgress/${user.uid}`);
+        const unsubscribe = onValue(progressRef, (snapshot) => {
+            const data = snapshot.val();
+            const stages = data?.unlockedStages ?? 0;
+            setUnlockedStages(stages);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    } else { // Dev mode
+        setUnlockedStages(0);
+        setLoading(false);
+    }
+
   }, [user, authLoading, router]);
-  
   
    useEffect(() => {
     if (typeof prevUnlockedStages !== 'undefined' && unlockedStages > prevUnlockedStages) {
@@ -177,25 +200,21 @@ function QuestPageContent() {
   }, [unlockedStages, character]);
 
   const currentQuestPosition = useMemo(() => {
-    if (unlockedStages >= quests.length) {
+    if (!gameConfig || unlockedStages >= gameConfig.numberOfStages) {
       return null;
     }
     return questPositions[unlockedStages];
-  }, [unlockedStages]);
+  }, [unlockedStages, gameConfig]);
 
-  const progressPercentage = quests.length > 0 ? (unlockedStages / quests.length) * 100 : 0;
-  const allComplete = quests.length > 0 && unlockedStages >= quests.length;
-  const boardImageUrl = `https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fstage-${quests.length}.png?alt=media&token=45046bb3-86c1-49e3-8f9e-5f2b3a219bae`;
+  const progressPercentage = totalStages > 0 ? (unlockedStages / totalStages) * 100 : 0;
+  const allComplete = totalStages > 0 && unlockedStages >= totalStages;
+  const boardImageUrl = `https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fstage-${totalStages}.png?alt=media&token=45046bb3-86c1-49e3-8f9e-5f2b3a219bae`;
 
-  if (loading || authLoading) {
+  if (loading || authLoading || !gameConfig) {
     return (
-       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <div className="w-full max-w-md space-y-4">
-          <Skeleton className="h-4 w-3/4 mx-auto" />
-          <Skeleton className="h-64 w-full" />
-           <Skeleton className="h-32 w-full" />
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
     );
   }
   
@@ -216,7 +235,7 @@ function QuestPageContent() {
        <header className="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-start bg-gradient-to-b from-black/50 to-transparent">
         <div className="flex-grow mx-4">
           <h2 className="text-center font-bold text-lg text-primary-foreground mb-1 [text-shadow:1px_1px_2px_rgba(0,0,0,0.5)]">
-            스테이지 {Math.min(unlockedStages + 1, quests.length)} / {quests.length}
+            스테이지 {Math.min(unlockedStages + 1, totalStages)} / {totalStages}
           </h2>
           <div className="relative">
             <Progress value={progressPercentage} className="[&>div]:bg-accent" aria-label={`${progressPercentage}% progress`} />
@@ -251,7 +270,7 @@ function QuestPageContent() {
               >
                  <Image
                     src={boardImageUrl}
-                    alt={`Stage-${quests.length}`}
+                    alt={`Stage-${totalStages}`}
                     width={594} 
                     height={3840} 
                     className="w-full h-auto object-top"
@@ -305,11 +324,11 @@ function QuestPageContent() {
                             <DialogHeader>
                               <DialogTitle>퀘스트</DialogTitle>
                               <DialogDescription className="pt-2">
-                               {quests[unlockedStages]?.description || `스테이지 ${unlockedStages + 1} 퀘스트를 불러오는 중...`}
+                               {gameConfig.quests[unlockedStages]?.description || `스테이지 ${unlockedStages + 1} 퀘스트를 불러오는 중...`}
                               </DialogDescription>
                             </DialogHeader>
                             <Button asChild size="lg" className="mt-4 w-full">
-                              <Link href={`/scan/${quests[unlockedStages]?.id}`}>
+                              <Link href={`/scan/${unlockedStages}`}>
                                 <QrCode className="mr-2 h-5 w-5" />
                                 QR코드 찍기
                               </Link>
@@ -336,7 +355,3 @@ export default function QuestsPage() {
     </Suspense>
   );
 }
-
-    
-
-    

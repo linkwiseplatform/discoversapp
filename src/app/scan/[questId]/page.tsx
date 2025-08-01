@@ -1,29 +1,29 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { quests } from '@/lib/quests';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { ref, set, get } from 'firebase/database';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
-import { ArrowLeft, VideoOff } from 'lucide-react';
+import { ArrowLeft, VideoOff, Loader2 } from 'lucide-react';
 import jsQR from 'jsqr';
 import { Input } from '@/components/ui/input';
+import type { GameConfig } from '@/lib/types';
 
 export default function ScanPage() {
   const router = useRouter();
   const params = useParams();
-  const questId = typeof params.questId === 'string' ? params.questId : '';
-  const { toast } = useToast();
-  const { user } = useAuth();
-  
-  const quest = quests.find(q => q.id === questId);
+  const questIndex = parseInt(typeof params.questId === 'string' ? params.questId : '-1', 10);
 
+  const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
+  
+  const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [devCode, setDevCode] = useState('');
@@ -34,28 +34,44 @@ export default function ScanPage() {
 
   const isDevelopment = process.env.NODE_ENV === 'development';
 
-  const handleValidate = async (scannedCode: string) => {
-    if (!quest) return;
+  useEffect(() => {
+     const fetchGameConfig = async () => {
+      const configRef = ref(db, 'config');
+      const snapshot = await get(configRef);
+      if (snapshot.exists()) {
+        setGameConfig(snapshot.val());
+      }
+    };
+    fetchGameConfig();
+  }, []);
+
+  const handleValidate = useCallback(async (scannedCode: string) => {
+    if (!gameConfig || questIndex < 0) return;
     
-    // Stop scanning to prevent multiple validations
     setIsScanning(false);
     if (requestRef.current) {
       cancelAnimationFrame(requestRef.current);
     }
+    
+    const quest = gameConfig.quests[questIndex];
+    if (!quest) {
+        toast({ title: '오류', description: '존재하지 않는 퀘스트입니다.', variant: 'destructive' });
+        router.push('/quests');
+        return;
+    }
 
-    if (scannedCode.trim().toUpperCase() === quest.qrCode) {
+    if (scannedCode.trim().toUpperCase() === quest.qrCode.toUpperCase()) {
       if(user) {
         try {
           const progressRef = ref(db, `userProgress/${user.uid}`);
           const snapshot = await get(progressRef);
           const currentStages = snapshot.val()?.unlockedStages ?? 0;
-          const questIndex = quests.findIndex(q => q.id === quest.id);
 
           if (questIndex === currentStages) {
-            await set(progressRef, { unlockedStages: currentStages + 1 });
+            await set(ref(db, `userProgress/${user.uid}/unlockedStages`), currentStages + 1);
             toast({
               title: '성공!',
-              description: `퀘스트를 완료했습니다: ${quest.title}`,
+              description: `퀘스트를 완료했습니다!`,
               className: 'bg-primary text-primary-foreground',
             });
             router.push('/quests');
@@ -75,6 +91,9 @@ export default function ScanPage() {
             });
             setTimeout(() => setIsScanning(true), 2000);
         }
+      } else if (isDevelopment) { // Handle dev mode success
+            toast({ title: '성공 (개발 모드)', description: '퀘스트를 완료했습니다!' });
+            router.push('/quests');
       }
     } else {
       toast({
@@ -82,12 +101,11 @@ export default function ScanPage() {
         description: '올바른 QR 코드를 스캔해주세요.',
         variant: 'destructive',
       });
-      // Resume scanning after a short delay
       setTimeout(() => setIsScanning(true), 2000);
     }
-  };
+  }, [gameConfig, questIndex, user, toast, router, isDevelopment]);
   
-  const tick = () => {
+  const tick = useCallback(() => {
     if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
       if (canvasRef.current) {
         const video = videoRef.current;
@@ -103,7 +121,7 @@ export default function ScanPage() {
 
           if (code && code.data) {
             handleValidate(code.data);
-            return; // Stop the loop
+            return;
           }
         }
       }
@@ -111,7 +129,7 @@ export default function ScanPage() {
     if (isScanning) {
        requestRef.current = requestAnimationFrame(tick);
     }
-  };
+  }, [handleValidate, isScanning]);
 
   useEffect(() => {
     if (isDevelopment) {
@@ -157,8 +175,17 @@ export default function ScanPage() {
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [isScanning, hasCameraPermission, isDevelopment]);
+  }, [isScanning, hasCameraPermission, isDevelopment, tick]);
 
+  if (authLoading || !gameConfig) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
+  
+  const quest = gameConfig.quests[questIndex];
   if (!quest) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
@@ -188,13 +215,12 @@ export default function ScanPage() {
 
       <div className="w-full max-w-md text-center">
         <div className="flex justify-center items-center gap-3 mb-2">
-            <quest.icon className="h-8 w-8 text-accent" />
             <h1 className="text-3xl font-bold [text-shadow:2px_2px_4px_rgba(0,0,0,0.7)]">
-            {quest.title}
+            Quest {questIndex + 1}
             </h1>
         </div>
         <p className="mb-6 [text-shadow:1px_1px_2px_rgba(0,0,0,0.7)]">
-          QR코드를 찾아서 아래 사각형에 맞춰주세요!
+          {quest.description}
         </p>
         <div className="relative w-4/5 max-w-sm aspect-square mx-auto flex items-center justify-center rounded-2xl overflow-hidden border-4 border-dashed border-accent/50 bg-black">
           <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
@@ -212,7 +238,7 @@ export default function ScanPage() {
             </div>
           )}
 
-          {(!isDevelopment && hasCameraPermission && isScanning) && (
+          {(hasCameraPermission && isScanning && !isDevelopment) && (
             <div className="absolute top-0 left-0 w-full h-full animate-scan-line bg-gradient-to-b from-green-400/0 via-green-400 to-green-400/0 opacity-60"></div>
           )}
           

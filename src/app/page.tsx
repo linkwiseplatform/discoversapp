@@ -10,6 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { ref, get } from 'firebase/database';
+import type { GameConfig } from '@/lib/types';
+import { Loader2 } from 'lucide-react';
 
 const KakaoIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -49,14 +53,36 @@ function GameInstructionsDialog() {
   );
 }
 
-const VALID_COUPON_CODE = 'ADVENTURE24';
-
 export default function Home() {
-  const [couponCode, setCouponCode] = useState('');
+  const [startCode, setStartCode] = useState('');
   const [showLogin, setShowLogin] = useState(false);
+  const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
+  const [configLoading, setConfigLoading] = useState(true);
   const router = useRouter();
-  const { user, loginAnonymously, loading } = useAuth();
+  const { user, loginAnonymously, loading: authLoading } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchGameConfig = async () => {
+      try {
+        const configRef = ref(db, 'config');
+        const snapshot = await get(configRef);
+        if (snapshot.exists()) {
+          setGameConfig(snapshot.val());
+        }
+      } catch (error) {
+        console.error("Error fetching game config:", error);
+        toast({
+          title: '설정 오류',
+          description: '게임 설정을 불러오는 데 실패했습니다.',
+          variant: 'destructive',
+        });
+      } finally {
+        setConfigLoading(false);
+      }
+    };
+    fetchGameConfig();
+  }, [toast]);
 
   useEffect(() => {
     if (user) {
@@ -64,32 +90,49 @@ export default function Home() {
     }
   }, [user, router]);
   
-  const handleCouponSubmit = async () => {
-    if (couponCode.trim().toUpperCase() === VALID_COUPON_CODE) {
-      const loggedInUser = await loginAnonymously();
-      if (loggedInUser) {
-        router.push('/quests');
-      } else {
-        toast({
-          title: '로그인 실패',
-          description: '익명 로그인에 실패했습니다. 다시 시도해 주세요.',
-          variant: 'destructive',
-        });
-      }
+  const handleStartCodeSubmit = async () => {
+    if (configLoading) return;
+    if (process.env.NODE_ENV === 'development' || startCode.trim() === gameConfig?.gameStartCode) {
+      setShowLogin(true);
     } else {
       toast({
-        title: '쿠폰 오류',
-        description: '쿠폰 코드가 올바르지 않습니다.',
+        title: '코드 오류',
+        description: '시작 코드가 올바르지 않습니다.',
         variant: 'destructive',
       });
-      setCouponCode('');
+      setStartCode('');
     }
   };
 
-  if (loading || user) {
+  const handleLogin = async () => {
+    const loggedInUser = await loginAnonymously();
+    if (loggedInUser) {
+        const userProgressRef = ref(db, `userProgress/${loggedInUser.uid}`);
+        const userName = loggedInUser.displayName || `익명_${loggedInUser.uid.substring(0, 5)}`;
+        
+        const snapshot = await get(userProgressRef);
+        if (!snapshot.exists()) {
+             await set(userProgressRef, { 
+                unlockedStages: 0,
+                lastPlayed: new Date().getTime(),
+                name: userName,
+                uid: loggedInUser.uid
+             });
+        }
+      router.push('/quests');
+    } else {
+      toast({
+        title: '로그인 실패',
+        description: '익명 로그인에 실패했습니다. 다시 시도해 주세요.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (authLoading || user || configLoading) {
     return (
         <div className="flex h-screen items-center justify-center">
-            <p>로딩 중...</p>
+             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     )
   }
@@ -113,20 +156,27 @@ export default function Home() {
             <CardDescription className="text-base pt-2">로그인 정보는 게임 진행 상황을 저장하기 위해서만 사용됩니다.</CardDescription>
           </CardHeader>
           <CardContent>
+             {showLogin ? (
+                <Button onClick={handleLogin} className="w-full gap-2">
+                    <KakaoIcon />
+                    카카오 로그인으로 시작
+                </Button>
+             ) : (
               <div className="space-y-4">
                 <Input
-                  id="coupon"
-                  placeholder="쿠폰코드를 입력하세요"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCouponSubmit()}
+                  id="start-code"
+                  placeholder="시작 코드를 입력하세요"
+                  value={startCode}
+                  onChange={(e) => setStartCode(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleStartCodeSubmit()}
                   required
                   className="text-center text-lg"
                 />
-                <Button onClick={handleCouponSubmit} className="w-full">
+                <Button onClick={handleStartCodeSubmit} className="w-full">
                   입장하기
                 </Button>
               </div>
+             )}
           </CardContent>
         </Card>
       </div>

@@ -7,12 +7,17 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Ticket, Scissors, ShieldCheck } from 'lucide-react';
+import { Ticket, Scissors, ShieldCheck, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { db } from '@/lib/firebase';
+import { ref, get } from 'firebase/database';
+import type { GameConfig } from '@/lib/types';
 
-function CouponCard({ isDisabled, expiryDate }: { isDisabled: boolean, expiryDate: string }) {
+function CouponCard({ isDisabled, expiryDate, config }: { isDisabled: boolean, expiryDate: string, config: GameConfig | null }) {
+  if (!config) return <Skeleton className="h-80 w-full max-w-md mx-auto" />;
+
   return (
     <div className={cn(
       "bg-accent/20 border-2 border-dashed border-accent p-6 rounded-lg shadow-lg max-w-md mx-auto relative transition-all duration-300",
@@ -25,8 +30,8 @@ function CouponCard({ isDisabled, expiryDate }: { isDisabled: boolean, expiryDat
       
       <div className="text-center">
         <Ticket className="h-16 w-16 mx-auto text-primary mb-4" />
-        <h3 className="font-headline text-2xl text-primary">Special Reward Coupon</h3>
-        <p className="text-muted-foreground">Thank you for completing the adventure!</p>
+        <h3 className="font-headline text-2xl text-primary">{config.couponTitle}</h3>
+        <p className="text-muted-foreground">{config.couponSubtitle}</p>
 
         <div className="my-6 bg-background rounded-md p-4">
           <p className="text-sm text-muted-foreground">Your Code</p>
@@ -48,16 +53,27 @@ export default function RewardsPage() {
   const [couponDisabled, setCouponDisabled] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
+  const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const { toast } = useToast();
   const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') return;
-    if (!loading && !user) {
+    if (!loading && !user && process.env.NODE_ENV !== 'development') {
       router.replace('/');
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+     const fetchGameConfig = async () => {
+      const configRef = ref(db, 'config');
+      const snapshot = await get(configRef);
+      if (snapshot.exists()) {
+        setGameConfig(snapshot.val());
+      }
+    };
+    fetchGameConfig();
+  }, []);
 
 
   useEffect(() => {
@@ -67,7 +83,7 @@ export default function RewardsPage() {
   }, []);
 
   const handleAdminValidate = () => {
-    if (adminCode.toUpperCase() === 'DISABLE') {
+    if (adminCode === gameConfig?.adminCode) {
       setCouponDisabled(true);
       toast({
         title: 'Coupon Disabled',
@@ -81,12 +97,10 @@ export default function RewardsPage() {
     }
   };
   
-  if (loading && process.env.NODE_ENV !== 'development') {
+  if (loading || !gameConfig) {
     return (
-        <div className="container py-8 text-center space-y-4">
-          <Skeleton className="h-10 w-2/3 mx-auto" />
-          <Skeleton className="h-64 w-full max-w-md mx-auto" />
-           <Skeleton className="h-48 w-full max-w-md mx-auto" />
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
   }
@@ -96,7 +110,7 @@ export default function RewardsPage() {
         <h1 className="font-headline text-4xl mb-2">You've Earned a Reward!</h1>
         <p className="text-muted-foreground mb-8">Present this coupon to claim your prize.</p>
         
-        <CouponCard isDisabled={couponDisabled} expiryDate={expiryDate} />
+        <CouponCard isDisabled={couponDisabled} expiryDate={expiryDate} config={gameConfig} />
         
         <Card className="max-w-md mx-auto mt-8">
           <CardHeader>

@@ -1,25 +1,51 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { auth, googleProvider } from '@/lib/firebase';
-import { onAuthStateChanged, signInAnonymously, signInWithPopup, signOut, User } from 'firebase/auth';
+import { useState, useEffect, useCallback } from 'react';
+import { auth, googleProvider, db } from '@/lib/firebase';
+import { onAuthStateChanged, signInWithPopup, signOut, User, signInAnonymously } from 'firebase/auth';
+import { ref, get } from 'firebase/database';
+import type { Admin } from '@/lib/types';
 
 export type { User };
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminLoading, setIsAdminLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      if (user) {
+        setIsAdminLoading(true);
+        try {
+          const adminsRef = ref(db, 'admins');
+          const snapshot = await get(adminsRef);
+          if (snapshot.exists()) {
+            const admins = snapshot.val() as Record<string, Admin>;
+            const isAdminUser = Object.values(admins).some(admin => admin.id === user.uid);
+            setIsAdmin(isAdminUser);
+          } else {
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+          setIsAdmin(false);
+        } finally {
+          setIsAdminLoading(false);
+        }
+      } else {
+        setIsAdmin(false);
+        setIsAdminLoading(false);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  const loginAnonymously = async () => {
+  const loginAnonymously = useCallback(async () => {
     try {
       const userCredential = await signInAnonymously(auth);
       return userCredential.user;
@@ -27,23 +53,27 @@ export function useAuth() {
       console.error("Anonymous sign-in failed:", error);
       return null;
     }
-  };
+  }, []);
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = useCallback(async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      return result.user;
     } catch (error) {
       console.error("Google sign-in failed:", error);
+      return null;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await signOut(auth);
+      setUser(null);
+      setIsAdmin(false);
     } catch (error) {
       console.error("Sign-out failed:", error);
     }
-  };
+  }, []);
 
-  return { user, loading, loginAnonymously, loginWithGoogle, logout };
+  return { user, loading, isAdmin, isAdminLoading, loginAnonymously, loginWithGoogle, logout };
 }
