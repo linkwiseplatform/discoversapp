@@ -125,6 +125,11 @@ function QuestPageContent() {
   const [showConfettiAt, setShowConfettiAt] = useState<{ top: string, left: string } | null>(null);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      setLoading(false);
+      return;
+    }
+    
     if (authLoading) return;
     if (!user) {
       router.replace('/');
@@ -331,5 +336,7 @@ export default function QuestsPage() {
     </Suspense>
   );
 }
+
+    
 
     

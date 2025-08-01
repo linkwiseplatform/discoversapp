@@ -1,3 +1,9 @@
+
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -12,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const mockUsers = [
   { id: 'user-1', name: 'Explorer Alice', questsCompleted: 5, lastLogin: '2 hours ago' },
@@ -20,6 +27,31 @@ const mockUsers = [
 ];
 
 export default function AdminPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') return;
+    if (!loading && !user) {
+      router.replace('/');
+    }
+  }, [user, loading, router]);
+  
+  if (loading && process.env.NODE_ENV !== 'development') {
+    return (
+      <AppLayout>
+        <div className="container py-8">
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-1/3" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+
   return (
     <AppLayout>
       <div className="container py-8">
@@ -134,3 +166,5 @@ export default function AdminPage() {
     </AppLayout>
   );
 }
+
+    

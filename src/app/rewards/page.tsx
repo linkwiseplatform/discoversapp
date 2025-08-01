@@ -1,6 +1,9 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +11,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Ticket, Scissors, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function CouponCard({ isDisabled, expiryDate }: { isDisabled: boolean, expiryDate: string }) {
   return (
@@ -46,6 +50,16 @@ export default function RewardsPage() {
   const [adminCode, setAdminCode] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const { toast } = useToast();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') return;
+    if (!loading && !user) {
+      router.replace('/');
+    }
+  }, [user, loading, router]);
+
 
   useEffect(() => {
     const today = new Date();
@@ -67,6 +81,18 @@ export default function RewardsPage() {
       });
     }
   };
+  
+  if (loading && process.env.NODE_ENV !== 'development') {
+    return (
+      <AppLayout>
+        <div className="container py-8 text-center space-y-4">
+          <Skeleton className="h-10 w-2/3 mx-auto" />
+          <Skeleton className="h-64 w-full max-w-md mx-auto" />
+           <Skeleton className="h-48 w-full max-w-md mx-auto" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -99,3 +125,5 @@ export default function RewardsPage() {
     </AppLayout>
   );
 }
+
+    
