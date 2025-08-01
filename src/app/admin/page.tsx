@@ -54,7 +54,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   const [config, setConfig] = useState<GameConfig | null>(null);
   const [qrCodeUrls, setQrCodeUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] useState(false);
+  const [saving, setSaving] = useState(false);
   
   const [newAdminName, setNewAdminName] = useState('');
   const [newAdminId, setNewAdminId] = useState('');
@@ -71,18 +71,12 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
         const [adminSnapshot, configSnapshot] = await Promise.all([get(adminRef), get(configRef)]);
 
         if (adminSnapshot.exists()) setAdmins(adminSnapshot.val());
+        
+        let fetchedConfig: GameConfig;
         if (configSnapshot.exists()) {
-           const fetchedConfig = configSnapshot.val();
-           setConfig(fetchedConfig);
-           // Ensure quests array matches numberOfStages
-           const numStages = fetchedConfig.numberOfStages || 3;
-           const quests = fetchedConfig.quests || [];
-           while (quests.length < numStages) quests.push(DEFAULT_QUEST);
-           fetchedConfig.quests = quests.slice(0, numStages);
-           setConfig(fetchedConfig);
+           fetchedConfig = configSnapshot.val();
         } else {
-            // Initialize with default config
-            const defaultConfig: GameConfig = {
+            fetchedConfig = {
                 numberOfStages: 3,
                 quests: Array(3).fill(DEFAULT_QUEST),
                 couponTitle: '보상 쿠폰',
@@ -90,8 +84,14 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
                 adminCode: '1234',
                 gameStartCode: 'START',
             };
-            setConfig(defaultConfig);
         }
+        
+        const numStages = fetchedConfig.numberOfStages || 3;
+        const quests = fetchedConfig.quests || [];
+        while (quests.length < numStages) quests.push({...DEFAULT_QUEST});
+        fetchedConfig.quests = quests.slice(0, numStages);
+        
+        setConfig(fetchedConfig);
 
       } catch (error) {
         toast({ variant: 'destructive', title: '오류', description: '데이터를 불러오는 데 실패했습니다.' });
