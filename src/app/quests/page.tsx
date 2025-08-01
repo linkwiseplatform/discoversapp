@@ -35,7 +35,7 @@ const ConfettiPiece = ({ id }: { id: number }) => {
         backgroundColor: ['#E89C27', '#3F7242', '#FFD700', '#FFFFFF'][Math.floor(Math.random() * 4)],
     } as React.CSSProperties;
 
-    return <div key={id} className="animate-burst w-2 h-2 rounded-full" style={style as any} />;
+    return <div key={id} className="animate-burst w-2 h-2 rounded-full" style={style} />;
 };
 
 const StageClearAnimation = ({ position }: { position: { top: string, left: string } | null }) => {
@@ -116,9 +116,7 @@ const questPositions = [
 function QuestPageContent() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const searchParams = useSearchParams();
 
-  const [completedQuests, setCompletedQuests] = useState<string[]>([]);
   const [unlockedStages, setUnlockedStages] = useState(0);
   const [character, setCharacter] = useState<Character>('female');
   const [loading, setLoading] = useState(true);
@@ -138,12 +136,6 @@ function QuestPageContent() {
       const data = snapshot.val();
       const stages = data?.unlockedStages ?? 0;
       setUnlockedStages(stages);
-      
-      const completed = [];
-      for (let i = 0; i < stages; i++) {
-        if(quests[i]) completed.push(quests[i].id);
-      }
-      setCompletedQuests(completed);
       setLoading(false);
     });
 
@@ -339,3 +331,5 @@ export default function QuestsPage() {
     </Suspense>
   );
 }
+
+    
