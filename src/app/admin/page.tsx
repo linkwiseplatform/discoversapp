@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AppLayout } from '@/components/AppLayout';
 import { quests } from '@/lib/quests';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -35,7 +34,6 @@ const KakaoIcon = () => (
 
 function AdminDashboard({ user }: { user: User }) {
   return (
-    <AppLayout>
       <div className="container py-8">
         <h1 className="font-headline text-4xl mb-4">Admin Dashboard</h1>
         <p className="text-muted-foreground mb-6">Manage your discoversapp content and users. Welcome, {user.displayName || 'Admin'}!</p>
@@ -145,7 +143,6 @@ function AdminDashboard({ user }: { user: User }) {
           </TabsContent>
         </Tabs>
       </div>
-    </AppLayout>
   );
 }
 
@@ -172,12 +169,12 @@ function AdminLoginPage({ onLogin }: { onLogin: () => void }) {
 
 export default function AdminPage() {
   const { user, loading, loginWithGoogle } = useAuth(); 
+  const router = useRouter();
 
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   if (loading && !isDevelopment) {
     return (
-      <AppLayout>
         <div className="container py-8">
           <div className="space-y-4">
             <Skeleton className="h-10 w-1/3" />
@@ -185,14 +182,13 @@ export default function AdminPage() {
             <Skeleton className="h-64 w-full" />
           </div>
         </div>
-      </AppLayout>
     );
   }
 
   if (!user && !isDevelopment) {
     return <AdminLoginPage onLogin={loginWithGoogle} />;
   }
-
+  
   const mockUser: User = {
     uid: 'dev-user-id',
     email: 'dev@example.com',

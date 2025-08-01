@@ -7,7 +7,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { AppLayout } from '@/components/AppLayout';
 import { Ticket, Scissors, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -84,18 +83,15 @@ export default function RewardsPage() {
   
   if (loading && process.env.NODE_ENV !== 'development') {
     return (
-      <AppLayout>
         <div className="container py-8 text-center space-y-4">
           <Skeleton className="h-10 w-2/3 mx-auto" />
           <Skeleton className="h-64 w-full max-w-md mx-auto" />
            <Skeleton className="h-48 w-full max-w-md mx-auto" />
         </div>
-      </AppLayout>
     );
   }
 
   return (
-    <AppLayout>
       <div className="container py-8 text-center">
         <h1 className="font-headline text-4xl mb-2">You've Earned a Reward!</h1>
         <p className="text-muted-foreground mb-8">Present this coupon to claim your prize.</p>
@@ -122,8 +118,5 @@ export default function RewardsPage() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
   );
 }
-
-    
