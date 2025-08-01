@@ -160,7 +160,7 @@ function AdminLoginPage({ onLogin }: { onLogin: () => void }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={onLogin} className="w-full">
+          <Button onClick={onLogin} className="w-full gap-2">
             <KakaoIcon />
             Login with Kakao
           </Button>
@@ -171,9 +171,11 @@ function AdminLoginPage({ onLogin }: { onLogin: () => void }) {
 }
 
 export default function AdminPage() {
-  const { user, loading, loginWithGoogle } = useAuth(); // Assuming loginWithGoogle can be adapted for Kakao
-  
-  if (loading) {
+  const { user, loading, loginWithGoogle } = useAuth(); 
+
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  if (loading && !isDevelopment) {
     return (
       <AppLayout>
         <div className="container py-8">
@@ -187,9 +189,24 @@ export default function AdminPage() {
     );
   }
 
-  if (!user) {
+  if (!user && !isDevelopment) {
     return <AdminLoginPage onLogin={loginWithGoogle} />;
   }
 
-  return <AdminDashboard user={user} />;
+  const mockUser: User = {
+    uid: 'dev-user-id',
+    email: 'dev@example.com',
+    displayName: 'Admin (Dev)',
+    photoURL: null,
+    emailVerified: true,
+    phoneNumber: null,
+    isAnonymous: false,
+    tenantId: null,
+    providerData: [],
+    metadata: {},
+    providerId: '',
+    toJSON: () => ({}),
+  };
+
+  return <AdminDashboard user={user || mockUser} />;
 }
