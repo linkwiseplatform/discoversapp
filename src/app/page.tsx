@@ -6,13 +6,45 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const KakaoIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2C6.477 2 2 5.79 2 10.286C2 13.537 4.021 16.365 6.929 17.84L5.683 22L9.827 19.58C10.518 19.714 11.246 19.786 12 19.786C17.523 19.786 22 16.006 22 11.5C22 6.994 17.523 2 12 2Z" fill="#391B1B"/>
     </svg>
 );
+
+function GameInstructionsDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button className="font-headline text-2xl text-primary cursor-pointer hover:underline">게임 방법</button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-headline text-2xl">게임 설명</DialogTitle>
+          <DialogDescription>
+            discoversapp에 오신 것을 환영합니다! 모험을 시작하는 방법은 다음과 같습니다.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-1">
+            <h4 className="font-headline text-lg text-primary">1. 스테이지 탐험</h4>
+            <p className="text-muted-foreground">게임 보드에서 흥미진진한 스테이지들을 탐색하세요.</p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-headline text-lg text-primary">2. QR 코드 스캔</h4>
+            <p className="text-muted-foreground">각 스테이지에서 숨겨진 QR 코드를 찾아 스캔하여 퀘스트를 완료하세요.</p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-headline text-lg text-primary">3. 보상 획득</h4>
+            <p className="text-muted-foreground">모든 스테이지를 완료하여 특별 쿠폰을 받으세요!</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const VALID_COUPON_CODE = 'ADVENTURE24';
 
@@ -43,8 +75,10 @@ export default function Home() {
       <div className="relative z-10 flex min-h-screen w-full items-center justify-center bg-black/40 p-4">
         <Card className="w-full max-w-sm bg-background/80 backdrop-blur-sm animate-in fade-in zoom-in-95">
           <CardHeader className="text-center">
-            <CardTitle className="font-headline text-4xl text-primary">discoversapp</CardTitle>
-            <CardDescription className="text-lg">Your adventure starts here!</CardDescription>
+             <div className="flex justify-center">
+               <GameInstructionsDialog />
+             </div>
+            <CardDescription className="text-base">로그인 정보는 게임 진행을 위해서만 사용됩니다.</CardDescription>
           </CardHeader>
           <CardContent>
             {step === 'coupon' ? (
