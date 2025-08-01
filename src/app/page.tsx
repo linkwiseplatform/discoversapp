@@ -71,15 +71,15 @@ export default function Home() {
         router.push('/quests');
       } else {
         toast({
-          title: 'Login Failed',
-          description: 'Could not log you in anonymously. Please try again.',
+          title: '로그인 실패',
+          description: '익명 로그인에 실패했습니다. 다시 시도해 주세요.',
           variant: 'destructive',
         });
       }
     } else {
       toast({
-        title: 'Invalid Coupon',
-        description: 'The coupon code is incorrect.',
+        title: '쿠폰 오류',
+        description: '쿠폰 코드가 올바르지 않습니다.',
         variant: 'destructive',
       });
       setCouponCode('');
@@ -89,7 +89,7 @@ export default function Home() {
   if (loading || user) {
     return (
         <div className="flex h-screen items-center justify-center">
-            <p>Loading...</p>
+            <p>로딩 중...</p>
         </div>
     )
   }
@@ -97,11 +97,12 @@ export default function Home() {
   return (
     <div className="relative min-h-screen w-full">
       <Image
-        src="https://placehold.co/1920x1080.png"
-        alt="A vibrant, illustrated forest background hinting at adventure."
+        src="https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fmainbg.png?alt=media&token=18968944-a82f-48f8-883a-33753556d07d"
+        alt="모험을 암시하는 활기찬 일러스트 스타일의 숲 배경"
         data-ai-hint="storybook forest"
         fill
         className="object-cover z-0"
+        priority
       />
       <div className="relative z-10 flex min-h-screen w-full items-center justify-center bg-black/40 p-4">
         <Card className="w-full max-w-sm bg-background/80 backdrop-blur-sm animate-in fade-in zoom-in-95">
@@ -109,7 +110,7 @@ export default function Home() {
              <div className="flex justify-center">
                <GameInstructionsDialog />
              </div>
-            <CardDescription className="text-base">로그인 정보는 게임 진행을 위해서만 사용됩니다.</CardDescription>
+            <CardDescription className="text-base pt-2">로그인 정보는 게임 진행 상황을 저장하기 위해서만 사용됩니다.</CardDescription>
           </CardHeader>
           <CardContent>
               <div className="space-y-4">
@@ -123,7 +124,7 @@ export default function Home() {
                   className="text-center text-lg"
                 />
                 <Button onClick={handleCouponSubmit} className="w-full">
-                  Enter
+                  입장하기
                 </Button>
               </div>
           </CardContent>
