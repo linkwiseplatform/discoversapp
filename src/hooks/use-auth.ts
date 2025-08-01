@@ -2,8 +2,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, signInAnonymously, User } from 'firebase/auth';
+import { auth, googleProvider } from '@/lib/firebase';
+import { onAuthStateChanged, signInAnonymously, signInWithPopup, signOut, User } from 'firebase/auth';
+
+export type { User };
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -27,5 +29,21 @@ export function useAuth() {
     }
   };
 
-  return { user, loading, loginAnonymously };
+  const loginWithGoogle = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error("Google sign-in failed:", error);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Sign-out failed:", error);
+    }
+  };
+
+  return { user, loading, loginAnonymously, loginWithGoogle, logout };
 }
