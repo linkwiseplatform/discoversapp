@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -14,17 +14,18 @@ const KakaoIcon = () => (
     </svg>
 );
 
+const VALID_COUPON_CODE = 'ADVENTURE24';
+
 export default function Home() {
   const [step, setStep] = useState<'coupon' | 'login'>('coupon');
   const [couponCode, setCouponCode] = useState('');
   const router = useRouter();
 
-  const handleCouponSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (couponCode.trim() !== '') {
+  useEffect(() => {
+    if (couponCode.trim().toUpperCase() === VALID_COUPON_CODE) {
       setStep('login');
     }
-  };
+  }, [couponCode]);
 
   const handleKakaoLogin = () => {
     router.push('/quests');
@@ -47,22 +48,16 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             {step === 'coupon' ? (
-              <form onSubmit={handleCouponSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="coupon" className="text-base">Enter Your Secret Code</Label>
-                  <Input
-                    id="coupon"
-                    placeholder="e.g. ADVENTURE24"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    required
-                    className="text-center text-lg"
-                  />
-                </div>
-                <Button type="submit" className="w-full font-headline text-lg">
-                  Start Adventure
-                </Button>
-              </form>
+              <div className="space-y-4">
+                <Input
+                  id="coupon"
+                  placeholder="쿠폰코드를 입력하세요"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  required
+                  className="text-center text-lg"
+                />
+              </div>
             ) : (
               <div className="flex flex-col items-center space-y-4 animate-in fade-in">
                 <p className="text-center text-lg">Welcome, Explorer!</p>
