@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { ref, set, get } from 'firebase/database';
+import { ref, set, get, update } from 'firebase/database';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
 import { ArrowLeft, VideoOff, Loader2 } from 'lucide-react';
@@ -65,10 +65,17 @@ export default function ScanPage() {
         try {
           const progressRef = ref(db, `userProgress/${user.uid}`);
           const snapshot = await get(progressRef);
-          const currentStages = snapshot.val()?.unlockedStages ?? 0;
+          const currentProgress = snapshot.val() ?? { unlockedStages: 0 };
+          const currentStages = currentProgress.unlockedStages;
 
           if (questIndex === currentStages) {
-            await set(ref(db, `userProgress/${user.uid}/unlockedStages`), currentStages + 1);
+            const newProgress = {
+                ...currentProgress,
+                unlockedStages: currentStages + 1,
+                lastPlayed: new Date().getTime(),
+            };
+            await set(progressRef, newProgress);
+            
             toast({
               title: '성공!',
               description: `퀘스트를 완료했습니다!`,
@@ -91,7 +98,7 @@ export default function ScanPage() {
             });
             setTimeout(() => setIsScanning(true), 2000);
         }
-      } else if (isDevelopment) { // Handle dev mode success
+      } else if (isDevelopment) {
             toast({ title: '성공 (개발 모드)', description: '퀘스트를 완료했습니다!' });
             router.push('/quests');
       }
@@ -198,7 +205,7 @@ export default function ScanPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 relative text-white bg-black">
       <Image
-        src="https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fqrbg.jpg?alt=media&token=621890ed-ccfc-4a22-950f-75b0c615e268"
+        src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/qrbg.jpg?alt=media&token=16a82741-6e3e-41a6-8f08-b952b7579f64"
         alt="QR Scan Background"
         fill
         className="object-cover -z-10 opacity-70"

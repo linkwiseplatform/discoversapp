@@ -55,7 +55,7 @@ const GameWonOverlay = () => {
     <div className="fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-center animate-fade-in overflow-hidden">
       <div className="relative z-10 flex flex-col items-center">
         <Image
-          src="https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Ffinish.png?alt=media&token=0c1d433e-6a1a-4201-b0b7-8cb07d55a1c9"
+          src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/finish.png?alt=media&token=ae8be852-121b-448d-b6b5-e4be228f25b5"
           width={300}
           height={300}
           alt="Game Finish"
@@ -67,7 +67,7 @@ const GameWonOverlay = () => {
           size="lg"
           className="mt-8 animate-button-pop-in px-10 py-5 text-xl shadow-lg [text-shadow:2px_2px_4px_rgba(0,0,0,0.5)]"
         >
-          쿠폰받기
+          보상 받으러 가기
         </Button>
       </div>
       <style jsx>{`
@@ -129,6 +129,12 @@ function QuestPageContent() {
   const totalStages = gameConfig?.numberOfStages ?? 0;
 
   useEffect(() => {
+     if (Math.random() > 0.5) {
+        setCharacter('male');
+     }
+  }, []);
+
+  useEffect(() => {
     if (authLoading) return;
     if (!user && process.env.NODE_ENV !== 'development') {
       router.replace('/');
@@ -141,7 +147,6 @@ function QuestPageContent() {
         if (snapshot.exists()) {
             setGameConfig(snapshot.val());
         } else {
-            // Fallback for when config is not set in DB
             setGameConfig({
                 numberOfStages: 5,
                 quests: Array(5).fill({description: "퀘스트 설명을 설정해주세요.", qrCode: "CHANGE_ME"}),
@@ -164,7 +169,7 @@ function QuestPageContent() {
             setLoading(false);
         });
         return () => unsubscribe();
-    } else { // Dev mode
+    } else { 
         setUnlockedStages(0);
         setLoading(false);
     }
@@ -184,8 +189,8 @@ function QuestPageContent() {
   }, [unlockedStages, prevUnlockedStages]);
 
   const hunterImages = {
-    female: "https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fgirlhunter.png?alt=media&token=135375c6-9dc3-44e1-9df1-31bc58746e27",
-    male: "https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fboyhunter.png?alt=media&token=e5611cef-127c-4e19-9bd1-cb4369818fb1",
+    female: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/girl.png?alt=media&token=99cbe3f4-6423-4196-b0ad-72600ded9605",
+    male: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/boy.png?alt=media&token=c96f6d8a-40b7-4b70-b1cb-b7d6e6759bf8",
   };
   
   const handleGenderToggle = () => {
@@ -196,7 +201,7 @@ function QuestPageContent() {
     if (unlockedStages === 0) {
       return hunterStartPositions[character];
     }
-    return questPositions[Math.min(unlockedStages, questPositions.length - 1)];
+    return questPositions[Math.min(unlockedStages -1, questPositions.length - 1)];
   }, [unlockedStages, character]);
 
   const currentQuestPosition = useMemo(() => {
@@ -208,7 +213,7 @@ function QuestPageContent() {
 
   const progressPercentage = totalStages > 0 ? (unlockedStages / totalStages) * 100 : 0;
   const allComplete = totalStages > 0 && unlockedStages >= totalStages;
-  const boardImageUrl = `https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fstage-${totalStages}.png?alt=media&token=45046bb3-86c1-49e3-8f9e-5f2b3a219bae`;
+  const boardImageUrl = `https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-${totalStages}.png?alt=media&token=45046bb3-86c1-49e3-8f9e-5f2b3a219bae`;
 
   if (loading || authLoading || !gameConfig) {
     return (
@@ -223,7 +228,7 @@ function QuestPageContent() {
       {allComplete && <GameWonOverlay />}
        <div className="fixed inset-0 w-full h-full -z-10">
         <Image
-          src="https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fgamebg2.jpg?alt=media&token=6ed03c96-691e-4c76-b787-1527b19fbe86"
+          src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/gamebg.jpg?alt=media&token=dd51f500-85fe-47b3-84c4-601b234ee3f1"
           alt=""
           fill
           className="object-cover blur-sm scale-105"
@@ -235,7 +240,7 @@ function QuestPageContent() {
        <header className="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-start bg-gradient-to-b from-black/50 to-transparent">
         <div className="flex-grow mx-4">
           <h2 className="text-center font-bold text-lg text-primary-foreground mb-1 [text-shadow:1px_1px_2px_rgba(0,0,0,0.5)]">
-            스테이지 {Math.min(unlockedStages + 1, totalStages)} / {totalStages}
+            퀘스트 {Math.min(unlockedStages + 1, totalStages)} / {totalStages}
           </h2>
           <div className="relative">
             <Progress value={progressPercentage} className="[&>div]:bg-accent" aria-label={`${progressPercentage}% progress`} />
@@ -254,7 +259,7 @@ function QuestPageContent() {
       <main className="flex-grow w-full overflow-hidden">
         <div className="relative w-full h-full">
           <Image
-            src="https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fgamebg2.jpg?alt=media&token=6ed03c96-691e-4c76-b787-1527b19fbe86"
+            src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/gamebg.jpg?alt=media&token=dd51f500-85fe-47b3-84c4-601b234ee3f1"
             alt="Game background"
             width={1080}
             height={1920}
@@ -311,7 +316,7 @@ function QuestPageContent() {
                           <DialogTrigger asChild>
                             <button className="focus:outline-none animate-jump">
                               <Image
-                                src="https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fquest.png?alt=media&token=105eaa91-5ac2-4048-bad8-8a0d7090f822"
+                                src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/quest.png?alt=media&token=e5dd45f9-a905-4475-bd03-c387bbb02a31"
                                 width={50}
                                 height={50}
                                 alt="현재 퀘스트"
