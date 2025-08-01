@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,11 +15,13 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { ref, set, get } from 'firebase/database';
 
-export default function ScanPage({ params }: { params: { questId: string } }) {
+export default function ScanPage() {
   const router = useRouter();
+  const params = useParams();
+  const questId = typeof params.questId === 'string' ? params.questId : '';
   const { toast } = useToast();
   const [code, setCode] = useState('');
-  const quest = quests.find(q => q.id === params.questId);
+  const quest = quests.find(q => q.id === questId);
   const { user } = useAuth();
 
   const handleValidate = async () => {
