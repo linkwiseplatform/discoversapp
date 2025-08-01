@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { ref, get } from 'firebase/database';
+import { ref, get, set } from 'firebase/database';
 import type { GameConfig } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -57,7 +57,7 @@ export default function Home() {
   const [startCode, setStartCode] = useState('');
   const [showLogin, setShowLogin] = useState(false);
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
-  const [configLoading, setConfigLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { user, loginAnonymously, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -77,21 +77,23 @@ export default function Home() {
           description: '게임 설정을 불러오는 데 실패했습니다.',
           variant: 'destructive',
         });
-      } finally {
-        setConfigLoading(false);
       }
     };
     fetchGameConfig();
   }, [toast]);
-
+  
   useEffect(() => {
+    if (authLoading) return; // Wait for auth state to be confirmed
+    
     if (user) {
       router.push('/quests');
+    } else {
+      setIsLoading(false); // Only stop loading if user is not logged in
     }
-  }, [user, router]);
-  
+  }, [user, authLoading, router]);
+
   const handleStartCodeSubmit = async () => {
-    if (configLoading) return;
+    if (!gameConfig) return;
     if (process.env.NODE_ENV === 'development' || startCode.trim() === gameConfig?.gameStartCode) {
       setShowLogin(true);
     } else {
@@ -119,7 +121,7 @@ export default function Home() {
                 uid: loggedInUser.uid
              });
         }
-      router.push('/quests');
+      // The useEffect hook will handle the redirect
     } else {
       toast({
         title: '로그인 실패',
@@ -129,7 +131,7 @@ export default function Home() {
     }
   };
 
-  if (authLoading || user || configLoading) {
+  if (isLoading) {
     return (
         <div className="flex h-screen items-center justify-center">
              <Loader2 className="h-8 w-8 animate-spin text-primary" />
