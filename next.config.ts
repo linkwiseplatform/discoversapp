@@ -24,8 +24,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    // This is required to allow the Next.js dev server to accept requests from
+    // the Firebase Studio preview server.
+    allowedDevOrigins: [
+      'https://*.cloudworkstations.dev',
+      'https://*.firebase.studio',
+    ],
+  },
+  devServer: {
+    // This is required by Turbopack to serve static files.
+    dirs: ['public'],
+  },
 };
 
 export default nextConfig;
-
-    
