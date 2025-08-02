@@ -141,44 +141,43 @@ function QuestPageContent() {
       return;
     }
 
-    setLoading(true);
-
-    const configRef = ref(db, 'config');
-    const fetchConfig = async () => {
-        try {
-            const snapshot = await get(configRef);
-            if (snapshot.exists()) {
-                setGameConfig(snapshot.val());
-            } else {
-                setGameConfig({
-                    numberOfStages: 5,
-                    quests: Array(5).fill({description: "퀘스트 설명을 설정해주세요.", qrCode: "CHANGE_ME"}),
-                    couponTitle: 'Reward Coupon',
-                    couponSubtitle: 'Thanks for playing!',
-                    adminCode: '0000',
-                    gameStartCode: 'START'
-                });
-            }
-        } catch (error) {
-            console.error("Failed to fetch game config:", error);
+    const fetchConfigAndProgress = async () => {
+      setLoading(true);
+      try {
+        const configRef = ref(db, 'config');
+        const snapshot = await get(configRef);
+        if (snapshot.exists()) {
+          setGameConfig(snapshot.val());
+        } else {
+           setGameConfig({
+                numberOfStages: 5,
+                quests: Array(5).fill({description: "퀘스트 설명을 설정해주세요.", qrCode: "CHANGE_ME"}),
+                couponTitle: 'Reward Coupon',
+                couponSubtitle: 'Thanks for playing!',
+                adminCode: '0000',
+                gameStartCode: 'START'
+            });
         }
-    };
 
-    fetchConfig();
-
-    if (user) {
-        const progressRef = ref(db, `userProgress/${user.uid}`);
-        const unsubscribe = onValue(progressRef, (snapshot) => {
+        if (user) {
+          const progressRef = ref(db, `userProgress/${user.uid}`);
+          onValue(progressRef, (snapshot) => {
             const data = snapshot.val();
             const stages = data?.unlockedStages ?? 0;
             setUnlockedStages(stages);
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    } else if (process.env.NODE_ENV === 'development') {
-        setUnlockedStages(0); // Dev default
+            setLoading(false); // Set loading to false after getting user progress
+          });
+        } else if (process.env.NODE_ENV === 'development') {
+            setUnlockedStages(0); // Dev default
+            setLoading(false); // Set loading to false in dev mode
+        }
+      } catch (error) {
+        console.error("Failed to fetch game config:", error);
         setLoading(false);
-    }
+      }
+    };
+    
+    fetchConfigAndProgress();
 
   }, [user, authLoading, router]);
   
@@ -219,7 +218,8 @@ function QuestPageContent() {
 
   const progressPercentage = totalStages > 0 ? (unlockedStages / totalStages) * 100 : 0;
   const allComplete = totalStages > 0 && unlockedStages >= totalStages;
-  const boardImageUrl = `https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-${totalStages}.png?alt=media&token=45046bb3-86c1-49e3-8f9e-5f2b3a219bae`;
+  const boardImageUrl = totalStages > 0 ? `https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fstage-${totalStages}.png?alt=media` : '';
+
 
   if (loading || authLoading || !gameConfig) {
     return (
@@ -279,14 +279,14 @@ function QuestPageContent() {
               <div
                 className="absolute top-[35%] w-[28%] h-auto"
               >
-                 <Image
+                 {boardImageUrl && <Image
                     src={boardImageUrl}
                     alt={`Stage-${totalStages}`}
                     width={594} 
                     height={3840} 
                     className="w-full h-auto object-top"
                     data-ai-hint="stage background"
-                  />
+                  />}
                   
                 <StageClearAnimation position={showConfettiAt} />
                 {!allComplete && (
@@ -366,3 +366,5 @@ export default function QuestsPage() {
     </Suspense>
   );
 }
+
+    
