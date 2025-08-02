@@ -165,7 +165,7 @@ export default function Home() {
              </div>
             <CardDescription className="text-sm pt-2 text-white/90">로그인 정보는 게임 진행 상황을 저장하기 위해서만 사용됩니다.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="text-center">
              {showLogin ? (
                 <Button onClick={handleLogin} className="w-full gap-2 h-12 text-lg">
                     <KakaoIcon />
@@ -184,6 +184,7 @@ export default function Home() {
                 />
               </div>
              )}
+             <p className="text-xs text-white/70 pt-4">© Discovers Uiwang. All Rights Reserved.</p>
           </CardContent>
         </Card>
       </div>
