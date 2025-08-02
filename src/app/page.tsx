@@ -158,8 +158,8 @@ export default function Home() {
         priority
       />
       <div className="absolute top-0 left-0 right-0 z-20 flex justify-center pt-16">
-        <h1 className="font-headline text-6xl text-white [text-shadow:4px_4px_8px_rgba(0,0,0,0.6)]">
-            공룡 어드벤처
+        <h1 className="font-headline text-6xl text-white [text-shadow:4px_4px_8px_rgba(0,0,0,0.6)] text-center">
+            공룡<br />어드벤처
         </h1>
       </div>
       <div className="relative z-10 flex min-h-screen w-full items-end justify-center p-4 pb-32">
