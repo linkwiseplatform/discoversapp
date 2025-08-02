@@ -72,10 +72,14 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   const [recentUsers, setRecentUsers] = useState<UserProgress[]>([]);
 
   const isDevelopment = process.env.NODE_ENV === 'development';
+  const undeletableAdminId = "4346782694";
 
   useEffect(() => {
+    const defaultAdmins = {
+        '4346782694': { id: '4346782694', name: '강선주' }
+    };
     if (isDevelopment) {
-      setAdmins({ 'dev-id': {id: 'dev-user', name: '개발자' }});
+      setAdmins({ ...defaultAdmins, 'dev-id': {id: 'dev-user', name: '개발자' }});
       setConfig(DEFAULT_CONFIG);
       return;
     }
@@ -90,7 +94,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
         if (adminSnapshot.exists()) {
           setAdmins(adminSnapshot.val());
         } else {
-           setAdmins({});
+           setAdmins(defaultAdmins);
         }
         
         let fetchedConfig: GameConfig;
@@ -183,6 +187,11 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   };
   
   const handleDeleteAdmin = (key: string) => {
+      const adminToDelete = admins[key];
+      if (adminToDelete && adminToDelete.id === undeletableAdminId) {
+          toast({ variant: 'destructive', title: '삭제 불가', description: '이 관리자는 삭제할 수 없습니다.'});
+          return;
+      }
       if (Object.keys(admins).length <= 1) {
           toast({ variant: 'destructive', title: '삭제 불가', description: '최소 한 명의 관리자는 있어야 합니다.'});
           return;
