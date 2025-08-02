@@ -22,7 +22,7 @@ function usePrevious<T>(value: T): T | undefined {
   return ref.current;
 }
 
-const ConfettiPiece = ({ id }: { id: number }) => {
+const ConfettiBurstPiece = ({ id }: { id: number }) => {
     const style = {
         '--angle-start': `${Math.random() * 360}deg`,
         '--angle-end': `${Math.random() * 360}deg`,
@@ -41,19 +41,45 @@ const StageClearAnimation = ({ position }: { position: { top: string, left: stri
         <div className="absolute z-50 pointer-events-none" style={{ top: position.top, left: position.left, transform: 'translate(-50%, -50%)' }}>
             <div className="relative">
                 {Array.from({ length: 50 }).map((_, i) => (
-                    <ConfettiPiece key={i} id={i} />
+                    <ConfettiBurstPiece key={i} id={i} />
                 ))}
             </div>
         </div>
     );
 };
 
+const ContinuousConfettiPiece = ({ id }: { id: number }) => {
+    const style = {
+        '--angle-start': `${Math.random() * 360}deg`,
+        '--angle-end': `${Math.random() * 360 + 360}deg`,
+        '--x-start': `${Math.random() * 100}vw`,
+        '--y-start': `${Math.random() * -20}vh`,
+        '--duration': `${Math.random() * 3 + 4}s`,
+        '--delay': `${Math.random() * 2}s`,
+        backgroundColor: ['#E89C27', '#3F7242', '#FFD700', '#FFFFFF', '#fde047', '#f97316', '#4ade80'][Math.floor(Math.random() * 7)],
+    } as React.CSSProperties;
+
+    return <div key={id} className="confetti-piece" style={style} />;
+};
+
+
 const GameWonOverlay = () => {
   const router = useRouter();
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex flex-col items-center justify-center animate-fade-in overflow-hidden">
-      <div className="relative z-10 flex flex-col items-center">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center animate-fade-in overflow-hidden">
+       {/* 50% Black Overlay */}
+      <div className="absolute inset-0 bg-black/50 z-0"></div>
+
+      {/* Confetti Animation Layer */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        {Array.from({ length: 150 }).map((_, i) => (
+            <ContinuousConfettiPiece key={i} id={i} />
+        ))}
+      </div>
+      
+      {/* Content Layer */}
+      <div className="relative z-20 flex flex-col items-center">
         <Image
           src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/finish.png?alt=media&token=ae8be852-121b-448d-b6b5-e4be228f25b5"
           width={300}
@@ -95,6 +121,25 @@ const GameWonOverlay = () => {
             100% { transform: rotate(var(--angle-end)) translate(var(--distance)); opacity: 0; }
         }
         .animate-burst { animation: burst var(--duration) ease-out forwards; }
+
+        /* Continuous Confetti Keyframes */
+        @keyframes fall {
+            0% {
+                transform: translate(var(--x-start), var(--y-start)) rotate(var(--angle-start));
+                opacity: 1;
+            }
+            100% {
+                transform: translate(calc(var(--x-start) + ${Math.random() * 100 - 50}px), 110vh) rotate(var(--angle-end));
+                opacity: 0;
+            }
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 8px;
+            height: 16px;
+            will-change: transform, opacity;
+            animation: fall var(--duration) linear var(--delay) infinite;
+        }
       `}</style>
     </div>
   );
