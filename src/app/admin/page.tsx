@@ -377,6 +377,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   );
 }
 
+// Wrapper component for production logic
 function Page() {
   const { user, loading, loginWithGoogle, isAdmin, isAdminLoading } = useAuth();
   const router = useRouter();
@@ -405,6 +406,7 @@ function Page() {
   return <AdminDashboard currentUser={user} />;
 }
 
+// Main export decision based on environment
 export default function AdminPage() {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
@@ -431,5 +433,3 @@ export default function AdminPage() {
 
   return <Page />;
 }
-
-    

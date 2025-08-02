@@ -213,10 +213,9 @@ export default function RewardsPage() {
     const isDevelopment = process.env.NODE_ENV === 'development';
     
     if (isDevelopment) {
-      return <RewardsPageContent user={null} />;
+      const devUser: User | null = null;
+      return <RewardsPageContent user={devUser} />;
     }
 
     return <Page />;
 }
-
-    
