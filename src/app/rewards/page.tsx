@@ -65,26 +65,26 @@ function RewardsPageContent({ user }: { user: User | null }) {
   const checkGameCompletion = useCallback(async (currentUser: User | null, config: GameConfig) => {
     if (!currentUser) {
        router.replace('/');
-       return;
+       return false;
     }
 
     const progressRef = ref(db, `userProgress/${currentUser.uid}`);
     const snapshot = await get(progressRef);
     if (!snapshot.exists()) {
        router.replace('/');
-       return;
+       return false;
     }
     const progress: UserProgress = snapshot.val();
     if (progress.unlockedStages < config.numberOfStages) {
       toast({ title: '아직 모든 퀘스트를 완료하지 않았습니다.', variant: 'destructive'});
       router.replace('/quests');
-      return;
+      return false;
     }
     
     if(progress.couponUsedTimestamp && isToday(new Date(progress.couponUsedTimestamp))) {
         setCouponDisabled(true);
     }
-    
+    return true;
   }, [router, toast]);
 
   useEffect(() => {
@@ -120,38 +120,30 @@ function RewardsPageContent({ user }: { user: User | null }) {
 
 
   const handleAdminValidate = async () => {
-    if (!user) {
-        if (process.env.NODE_ENV === 'development') {
-             if (adminCode === gameConfig?.adminCode) {
-                setCouponDisabled(true);
-                toast({ title: '성공 (개발 모드)', description: '쿠폰이 사용 처리되었습니다.' });
-             } else {
-                toast({ title: '잘못된 관리자 코드입니다.', variant: 'destructive' });
-             }
-             setAdminCode('');
-        } else {
-            toast({ title: '로그인이 필요합니다.', variant: 'destructive' });
-        }
-        return;
+    if (!user && process.env.NODE_ENV !== 'development') {
+       toast({ title: '로그인이 필요합니다.', variant: 'destructive' });
+       return;
     }
-
+    
     if (adminCode === gameConfig?.adminCode) {
       setCouponDisabled(true);
-      
-      const progressRef = ref(db, `userProgress/${user.uid}`);
-      await update(progressRef, { couponUsedTimestamp: new Date().getTime() });
-
       toast({
         title: '쿠폰 사용 완료',
         description: '보상 쿠폰이 사용 처리되었습니다.',
       });
+      
+      if(user){
+        const progressRef = ref(db, `userProgress/${user.uid}`);
+        await update(progressRef, { couponUsedTimestamp: new Date().getTime() });
+      }
+
     } else {
        toast({
         title: '잘못된 관리자 코드입니다.',
         variant: 'destructive',
       });
-      setAdminCode('');
     }
+    setAdminCode('');
   };
   
   if (pageLoading) {
@@ -220,7 +212,11 @@ function Page() {
 export default function RewardsPage() {
     const isDevelopment = process.env.NODE_ENV === 'development';
     
-    return isDevelopment ? <RewardsPageContent user={null} /> : <Page />;
+    if (isDevelopment) {
+      return <RewardsPageContent user={null} />;
+    }
+
+    return <Page />;
 }
 
     

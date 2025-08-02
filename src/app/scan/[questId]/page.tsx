@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, User } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { ref, set, get } from 'firebase/database';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,7 +14,6 @@ import { ArrowLeft, VideoOff, Loader2 } from 'lucide-react';
 import jsQR from 'jsqr';
 import { Input } from '@/components/ui/input';
 import type { GameConfig } from '@/lib/types';
-import type { User } from '@/hooks/use-auth';
 
 function ScanPageContent({ user }: { user: User | null }) {
   const router = useRouter();
@@ -195,7 +194,7 @@ function ScanPageContent({ user }: { user: User | null }) {
 
   if (pageLoading) {
     return (
-        <div className="flex h-screen items-center justify-center">
+        <div className="flex h-screen items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
@@ -203,8 +202,8 @@ function ScanPageContent({ user }: { user: User | null }) {
 
   if (!gameConfig) {
       return (
-           <div className="flex h-screen items-center justify-center">
-            <p>게임 설정을 불러오지 못했습니다.</p>
+           <div className="flex h-screen items-center justify-center bg-black">
+            <p className="text-white">게임 설정을 불러오지 못했습니다.</p>
         </div>
       )
   }
@@ -307,7 +306,7 @@ function Page() {
 
     if (authLoading) {
         return (
-            <div className="flex h-screen items-center justify-center">
+            <div className="flex h-screen items-center justify-center bg-black">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
@@ -316,8 +315,8 @@ function Page() {
     if (!user) {
         router.replace('/');
         return (
-            <div className="flex h-screen items-center justify-center">
-                <p>로그인이 필요합니다. 메인 페이지로 이동합니다.</p>
+            <div className="flex h-screen items-center justify-center bg-black">
+                <p className="text-white">로그인이 필요합니다. 메인 페이지로 이동합니다.</p>
             </div>
         );
     }
@@ -328,7 +327,11 @@ function Page() {
 export default function ScanPage() {
     const isDevelopment = process.env.NODE_ENV === 'development';
     
-    return isDevelopment ? <ScanPageContent user={null} /> : <Page />;
+    if (isDevelopment) {
+      return <ScanPageContent user={null} />;
+    }
+    
+    return <Page />;
 }
 
     

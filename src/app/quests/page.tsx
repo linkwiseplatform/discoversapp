@@ -8,12 +8,11 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { QrCode, Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, User } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { ref, onValue, get } from 'firebase/database';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { Character, GameConfig, UserProgress } from '@/lib/types';
-import type { User } from '@/hooks/use-auth';
 
 function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
@@ -121,9 +120,7 @@ function QuestPageContent({ user }: { user: User | null }) {
 
   const prevUnlockedStages = usePrevious(unlockedStages);
   const [showConfettiAt, setShowConfettiAt] = useState<{ top: string, left: string } | null>(null);
-
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
+  
   const totalStages = gameConfig?.numberOfStages ?? 0;
 
   useEffect(() => {
@@ -137,33 +134,39 @@ function QuestPageContent({ user }: { user: User | null }) {
       setLoading(true);
       try {
         const configRef = ref(db, 'config');
-        const snapshot = await get(configRef);
-        if (snapshot.exists()) {
-          setGameConfig(snapshot.val());
+        const configSnapshot = await get(configRef);
+        let fetchedConfig: GameConfig;
+        if (configSnapshot.exists()) {
+          fetchedConfig = configSnapshot.val();
         } else {
-           setGameConfig({
+           fetchedConfig = {
                 numberOfStages: 5,
                 quests: Array(5).fill({description: "퀘스트 설명을 설정해주세요.", qrCode: "CHANGE_ME"}),
                 couponTitle: 'Reward Coupon',
                 couponSubtitle: 'Thanks for playing!',
                 adminCode: '0000',
                 gameStartCode: 'START'
-            });
+            };
         }
+        setGameConfig(fetchedConfig);
 
         if (user) {
           const progressRef = ref(db, `userProgress/${user.uid}`);
           onValue(progressRef, (snapshot) => {
-            const data = snapshot.val();
+            const data: UserProgress | null = snapshot.val();
             const stages = data?.unlockedStages ?? 0;
             setUnlockedStages(stages);
+            if (data?.character) {
+              setCharacter(data.character);
+            }
+            setLoading(false);
           });
         } else {
-            setUnlockedStages(0);
+           setUnlockedStages(0);
+           setLoading(false);
         }
       } catch (error) {
         console.error("Failed to fetch game config:", error);
-      } finally {
         setLoading(false);
       }
     };
@@ -214,7 +217,7 @@ function QuestPageContent({ user }: { user: User | null }) {
 
   if (loading) {
     return (
-        <div className="flex h-screen items-center justify-center">
+        <div className="flex h-screen items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
@@ -356,7 +359,7 @@ function Page() {
 
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center bg-black">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -365,8 +368,8 @@ function Page() {
   if (!user) {
     router.replace('/');
     return (
-      <div className="flex h-screen items-center justify-center">
-         <p>로그인이 필요합니다. 메인 페이지로 이동합니다.</p>
+      <div className="flex h-screen items-center justify-center bg-black">
+         <p className="text-white">로그인이 필요합니다. 메인 페이지로 이동합니다.</p>
       </div>
     );
   }
@@ -375,9 +378,13 @@ function Page() {
 }
 
 export default function QuestsPage() {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  return isDevelopment ? <QuestPageContent user={null} /> : <Page />;
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    if (isDevelopment) {
+      return <QuestPageContent user={null} />;
+    }
+    
+    return <Page />;
 }
 
     

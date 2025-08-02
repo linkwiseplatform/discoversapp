@@ -409,7 +409,23 @@ export default function AdminPage() {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   if (isDevelopment) {
-    const devUser = { uid: 'dev-user', displayName: '개발자' } as User;
+    const devUser: User = { 
+      uid: 'dev-user', 
+      displayName: '개발자',
+      email: 'dev@example.com',
+      emailVerified: true,
+      isAnonymous: true,
+      photoURL: '',
+      providerData: [],
+      metadata: {},
+      providerId: 'password',
+      tenantId: null,
+      delete: async () => {},
+      getIdToken: async () => '',
+      getIdTokenResult: async () => ({} as any),
+      reload: async () => {},
+      toJSON: () => ({}),
+    };
     return <AdminDashboard currentUser={devUser} />;
   }
 
