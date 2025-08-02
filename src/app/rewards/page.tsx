@@ -44,7 +44,7 @@ function CouponCard({ isDisabled, expiryDate, config }: { isDisabled: boolean, e
         </p>
         {isDisabled && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
-             <p className="text-6xl font-black text-white/80 transform -rotate-12 select-none opacity-90">USED</p>
+             <p className="text-9xl font-black text-white/80 transform -rotate-12 select-none opacity-90">USED</p>
           </div>
         )}
       </div>
