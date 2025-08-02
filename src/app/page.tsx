@@ -27,7 +27,7 @@ function GameInstructionsDialog() {
       <DialogTrigger asChild>
         <button className="font-headline text-lg text-primary cursor-pointer hover:underline">게임 방법</button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md bg-background/80 backdrop-blur-sm">
+      <DialogContent className="sm:max-w-md bg-transparent border-none shadow-none text-white">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">게임 설명</DialogTitle>
           <DialogDescription>
@@ -157,13 +157,13 @@ export default function Home() {
         className="object-cover z-0"
         priority
       />
-      <div className="relative z-10 flex min-h-screen w-full items-center justify-center bg-black/40 p-4">
-        <Card className="w-full max-w-sm bg-background/80 backdrop-blur-sm animate-in fade-in zoom-in-95">
+      <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4">
+        <Card className="w-full max-w-sm bg-transparent border-none shadow-none animate-in fade-in zoom-in-95 text-white">
           <CardHeader className="text-center">
              <div className="flex justify-center">
                <GameInstructionsDialog />
              </div>
-            <CardDescription className="text-base pt-2">로그인 정보는 게임 진행 상황을 저장하기 위해서만 사용됩니다.</CardDescription>
+            <CardDescription className="text-base pt-2 text-white/90">로그인 정보는 게임 진행 상황을 저장하기 위해서만 사용됩니다.</CardDescription>
           </CardHeader>
           <CardContent>
              {showLogin ? (
