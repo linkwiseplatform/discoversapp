@@ -116,10 +116,11 @@ function QuestPageContent({ user }: { user: User | null }) {
   const [unlockedStages, setUnlockedStages] = useState(0);
   const [character, setCharacter] = useState<Character>('female');
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
 
   const prevUnlockedStages = usePrevious(unlockedStages);
   const [showConfettiAt, setShowConfettiAt] = useState<{ top: string, left: string } | null>(null);
+  const isDevelopment = process.env.NODE_ENV === 'development';
   
   const totalStages = gameConfig?.numberOfStages ?? 0;
 
@@ -163,7 +164,7 @@ function QuestPageContent({ user }: { user: User | null }) {
       } catch (error) {
         console.error("Failed to fetch game config:", error);
       } finally {
-        setLoading(false);
+        setPageLoading(false);
       }
     };
     
@@ -211,7 +212,7 @@ function QuestPageContent({ user }: { user: User | null }) {
   const boardImageUrl = totalStages > 0 ? `https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fstage-${totalStages}.png?alt=media` : '';
 
 
-  if (loading) {
+  if (pageLoading && !isDevelopment) {
     return (
         <div className="flex h-screen items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -374,11 +375,27 @@ function Page() {
 }
 
 export default function QuestsPage() {
-    if (process.env.NODE_ENV === 'development') {
-      return <QuestPageContent user={null} />;
-    }
-    
-    return <Page />;
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  if (isDevelopment) {
+    const devUser: User = { 
+      uid: 'dev-user', 
+      displayName: '개발자',
+      email: 'dev@example.com',
+      emailVerified: true,
+      isAnonymous: true,
+      photoURL: '',
+      providerData: [],
+      metadata: {},
+      providerId: 'password',
+      tenantId: null,
+      delete: async () => {},
+      getIdToken: async () => '',
+      getIdTokenResult: async () => ({} as any),
+      reload: async () => {},
+      toJSON: () => ({}),
+    };
+    return <QuestPageContent user={devUser} />;
+  }
+  
+  return <Page />;
 }
-
-    

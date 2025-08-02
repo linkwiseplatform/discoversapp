@@ -26,7 +26,7 @@ function ScanPageContent({ user }: { user: User | null }) {
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [devCode, setDevCode] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,7 +44,7 @@ function ScanPageContent({ user }: { user: User | null }) {
       } catch (e) {
         console.error("Failed to fetch game config", e)
       } finally {
-        setLoading(false);
+        setPageLoading(false);
       }
     };
     fetchGameConfig();
@@ -190,7 +190,7 @@ function ScanPageContent({ user }: { user: User | null }) {
     };
   }, [isScanning, hasCameraPermission, isDevelopment, tick]);
 
-  if (loading) {
+  if (pageLoading && !isDevelopment) {
     return (
         <div className="flex h-screen items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -315,11 +315,27 @@ function Page() {
 }
 
 export default function ScanPage() {
-    if (process.env.NODE_ENV === 'development') {
-      return <ScanPageContent user={null} />;
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    if (isDevelopment) {
+      const devUser: User = { 
+        uid: 'dev-user', 
+        displayName: '개발자',
+        email: 'dev@example.com',
+        emailVerified: true,
+        isAnonymous: true,
+        photoURL: '',
+        providerData: [],
+        metadata: {},
+        providerId: 'password',
+        tenantId: null,
+        delete: async () => {},
+        getIdToken: async () => '',
+        getIdTokenResult: async () => ({} as any),
+        reload: async () => {},
+        toJSON: () => ({}),
+      };
+      return <ScanPageContent user={devUser} />;
     }
     
     return <Page />;
 }
-
-    

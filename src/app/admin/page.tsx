@@ -53,7 +53,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   const [admins, setAdmins] = useState<Record<string, Admin>>({});
   const [config, setConfig] = useState<GameConfig | null>(null);
   const [qrCodeUrls, setQrCodeUrls] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
   const [newAdminName, setNewAdminName] = useState('');
@@ -96,7 +96,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
         toast({ variant: 'destructive', title: '오류', description: '데이터를 불러오는 데 실패했습니다.' });
         console.error(error);
       } finally {
-        setLoading(false);
+        setPageLoading(false);
       }
     };
     fetchData();
@@ -206,7 +206,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
       }
   };
 
-  if (loading || !config) {
+  if (pageLoading || !config) {
     return (
       <div className="container py-8 space-y-6">
         <div className="flex justify-between items-center">
@@ -406,7 +406,9 @@ function Page() {
 }
 
 export default function AdminPage() {
-  if (process.env.NODE_ENV === 'development') {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  if (isDevelopment) {
     const devUser: User = { 
       uid: 'dev-user', 
       displayName: '개발자',
@@ -429,5 +431,3 @@ export default function AdminPage() {
 
   return <Page />;
 }
-
-    

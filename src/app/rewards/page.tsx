@@ -57,10 +57,11 @@ function RewardsPageContent({ user }: { user: User | null }) {
   const [adminCode, setAdminCode] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
 
   const { toast } = useToast();
   const router = useRouter();
+  const isDevelopment = process.env.NODE_ENV === 'development';
   
   const checkGameCompletion = useCallback(async (currentUser: User, config: GameConfig) => {
     const progressRef = ref(db, `userProgress/${currentUser.uid}`);
@@ -105,7 +106,7 @@ function RewardsPageContent({ user }: { user: User | null }) {
         console.error(error);
         toast({ title: '오류가 발생했습니다.', variant: 'destructive'});
       } finally {
-        setLoading(false);
+        setPageLoading(false);
       }
     };
     
@@ -114,7 +115,7 @@ function RewardsPageContent({ user }: { user: User | null }) {
 
 
   const handleAdminValidate = async () => {
-    if (!user) {
+    if (!user && !isDevelopment) {
        toast({ title: '로그인이 필요합니다.', variant: 'destructive' });
        return;
     }
@@ -126,8 +127,10 @@ function RewardsPageContent({ user }: { user: User | null }) {
         description: '보상 쿠폰이 사용 처리되었습니다.',
       });
       
-      const progressRef = ref(db, `userProgress/${user.uid}`);
-      await update(progressRef, { couponUsedTimestamp: new Date().getTime() });
+      if(user) {
+        const progressRef = ref(db, `userProgress/${user.uid}`);
+        await update(progressRef, { couponUsedTimestamp: new Date().getTime() });
+      }
 
     } else {
        toast({
@@ -138,7 +141,7 @@ function RewardsPageContent({ user }: { user: User | null }) {
     setAdminCode('');
   };
   
-  if (loading) {
+  if (pageLoading && !isDevelopment) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -202,11 +205,27 @@ function Page() {
 }
 
 export default function RewardsPage() {
-    if (process.env.NODE_ENV === 'development') {
-      return <RewardsPageContent user={null} />;
-    }
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  if (isDevelopment) {
+     const devUser: User = { 
+      uid: 'dev-user', 
+      displayName: '개발자',
+      email: 'dev@example.com',
+      emailVerified: true,
+      isAnonymous: true,
+      photoURL: '',
+      providerData: [],
+      metadata: {},
+      providerId: 'password',
+      tenantId: null,
+      delete: async () => {},
+      getIdToken: async () => '',
+      getIdTokenResult: async () => ({} as any),
+      reload: async () => {},
+      toJSON: () => ({}),
+    };
+    return <RewardsPageContent user={devUser} />;
+  }
 
-    return <Page />;
+  return <Page />;
 }
-
-    
