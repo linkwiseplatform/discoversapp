@@ -110,8 +110,20 @@ function RewardsPageContent({ user }: { user: User | null }) {
       }
     };
     
-    fetchGameConfig();
-  }, [user, checkGameCompletion, toast]);
+    if (isDevelopment) {
+        setGameConfig({
+            numberOfStages: 3,
+            quests: [],
+            couponTitle: '개발용 쿠폰',
+            couponSubtitle: '모든 퀘스트를 완료하셨습니다!',
+            adminCode: '1234',
+            gameStartCode: 'START'
+        });
+        setPageLoading(false);
+    } else {
+        fetchGameConfig();
+    }
+  }, [user, checkGameCompletion, toast, isDevelopment]);
 
 
   const handleAdminValidate = async () => {
@@ -141,7 +153,7 @@ function RewardsPageContent({ user }: { user: User | null }) {
     setAdminCode('');
   };
   
-  if (pageLoading && !isDevelopment) {
+  if (pageLoading) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -205,8 +217,7 @@ function Page() {
 }
 
 export default function RewardsPage() {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  if (isDevelopment) {
+  if (process.env.NODE_ENV === 'development') {
      const devUser: User = { 
       uid: 'dev-user', 
       displayName: '개발자',
