@@ -53,7 +53,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   const [admins, setAdmins] = useState<Record<string, Admin>>({});
   const [config, setConfig] = useState<GameConfig | null>(null);
   const [qrCodeUrls, setQrCodeUrls] = useState<string[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   
   const [newAdminName, setNewAdminName] = useState('');
@@ -63,6 +63,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
 
   useEffect(() => {
     const fetchData = async () => {
+      setPageLoading(true);
       try {
         const adminRef = ref(db, 'admins');
         const configRef = ref(db, 'config');
