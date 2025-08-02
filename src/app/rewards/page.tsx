@@ -16,12 +16,51 @@ import { ref, get, update } from 'firebase/database';
 import type { GameConfig, UserProgress } from '@/lib/types';
 import { isToday } from 'date-fns';
 
-function CouponCard({ isDisabled, expiryDate, config }: { isDisabled: boolean, expiryDate: string, config: GameConfig | null }) {
-  if (!config) return <Skeleton className="h-80 w-full max-w-md mx-auto" />;
+function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: number }) {
+  const calculateTimeLeft = () => {
+    const difference = expiryTimestamp - new Date().getTime();
+    let timeLeft = {
+      hours: '00',
+      minutes: '00',
+      seconds: '00',
+    };
+
+    if (difference > 0) {
+      timeLeft = {
+        hours: String(Math.floor((difference / (1000 * 60 * 60)) % 24)).padStart(2, '0'),
+        minutes: String(Math.floor((difference / 1000 / 60) % 60)).padStart(2, '0'),
+        seconds: String(Math.floor((difference / 1000) % 60)).padStart(2, '0'),
+      };
+    }
+    return timeLeft;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [expiryTimestamp]);
+
+  return (
+    <div className="my-4 bg-background rounded-md p-3">
+      <p className="text-sm text-muted-foreground">남은 시간</p>
+      <p className="font-mono text-3xl tracking-widest">
+        {timeLeft.hours}:{timeLeft.minutes}:{timeLeft.seconds}
+      </p>
+    </div>
+  );
+}
+
+function CouponCard({ isDisabled, expiryDate, expiryTimestamp, config }: { isDisabled: boolean, expiryDate: string, expiryTimestamp: number, config: GameConfig | null }) {
+  if (!config) return <Skeleton className="h-60 w-full max-w-md mx-auto" />;
 
   return (
     <div className={cn(
-      "bg-accent/20 border-2 border-dashed border-accent p-6 rounded-lg shadow-lg max-w-md mx-auto relative transition-all duration-300",
+      "bg-accent/20 border-2 border-dashed border-accent p-4 rounded-lg shadow-lg max-w-md mx-auto relative transition-all duration-300",
       isDisabled && "bg-muted border-muted-foreground/50 opacity-60"
     )}>
       <div className="absolute -top-4 -left-4 bg-background p-1 rounded-full"><Scissors className="h-6 w-6 text-accent -rotate-90" /></div>
@@ -30,17 +69,14 @@ function CouponCard({ isDisabled, expiryDate, config }: { isDisabled: boolean, e
       <div className="absolute -bottom-4 -right-4 bg-background p-1 rounded-full"><Scissors className="h-6 w-6 text-accent" /></div>
       
       <div className="text-center">
-        <Ticket className="h-16 w-16 mx-auto text-primary mb-4" />
-        <h3 className="font-headline text-2xl text-primary">{config.couponTitle}</h3>
-        <p className="text-muted-foreground">{config.couponSubtitle}</p>
+        <Ticket className="h-12 w-12 mx-auto text-primary mb-2" />
+        <h3 className="font-headline text-xl text-primary">{config.couponTitle}</h3>
+        <p className="text-muted-foreground text-sm">{config.couponSubtitle}</p>
 
-        <div className="my-6 bg-background rounded-md p-4">
-          <p className="text-sm text-muted-foreground">Your Code</p>
-          <p className="font-headline text-4xl tracking-widest">ADV-2024</p>
-        </div>
+        <CountdownTimer expiryTimestamp={expiryTimestamp} />
 
-        <p className="text-sm">
-          Expires: <span className="font-semibold">{expiryDate}</span>
+        <p className="text-xs">
+          (만료: {expiryDate})
         </p>
         {isDisabled && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
@@ -56,6 +92,7 @@ function RewardsPageContent({ user }: { user: User | null }) {
   const [couponDisabled, setCouponDisabled] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
+  const [expiryTimestamp, setExpiryTimestamp] = useState(0);
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
 
@@ -86,7 +123,8 @@ function RewardsPageContent({ user }: { user: User | null }) {
   useEffect(() => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
-    setExpiryDate(today.toLocaleString('ko-KR'));
+    setExpiryTimestamp(today.getTime());
+    setExpiryDate(today.toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
     
     const fetchGameConfig = async () => {
       try {
@@ -163,10 +201,9 @@ function RewardsPageContent({ user }: { user: User | null }) {
 
   return (
       <div className="container py-8 text-center">
-        <h1 className="font-headline text-4xl mb-2">모든 퀘스트 완료!</h1>
-        <p className="text-muted-foreground mb-8">보상으로 쿠폰을 드립니다. 직원에게 이 화면을 보여주세요.</p>
+        <h1 className="font-headline text-4xl mb-8">모든 퀘스트 완료!</h1>
         
-        <CouponCard isDisabled={couponDisabled} expiryDate={expiryDate} config={gameConfig} />
+        <CouponCard isDisabled={couponDisabled} expiryDate={expiryDate} expiryTimestamp={expiryTimestamp} config={gameConfig} />
         
         <Card className="max-w-md mx-auto mt-8">
           <CardHeader>
