@@ -380,8 +380,9 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
 export default function AdminPage() {
   const { user, loading, loginWithGoogle, isAdmin, isAdminLoading } = useAuth();
   const router = useRouter();
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
-  if (process.env.NODE_ENV === 'development') {
+  if (isDevelopment) {
     const devUser = { uid: 'dev-user', displayName: '개발자' } as User;
     return <AdminDashboard currentUser={devUser} />;
   }
@@ -409,5 +410,3 @@ export default function AdminPage() {
 
   return <AdminDashboard currentUser={user} />;
 }
-
-    

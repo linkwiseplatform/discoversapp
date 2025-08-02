@@ -134,7 +134,7 @@ function QuestPageContent() {
   }, []);
 
   useEffect(() => {
-    const fetchConfigAndProgress = async () => {
+    const fetchConfigAndProgress = async (currentUser: typeof user) => {
       setLoading(true);
       try {
         const configRef = ref(db, 'config');
@@ -152,8 +152,8 @@ function QuestPageContent() {
             });
         }
 
-        if (user) {
-          const progressRef = ref(db, `userProgress/${user.uid}`);
+        if (currentUser) {
+          const progressRef = ref(db, `userProgress/${currentUser.uid}`);
           onValue(progressRef, (snapshot) => {
             const data = snapshot.val();
             const stages = data?.unlockedStages ?? 0;
@@ -161,6 +161,8 @@ function QuestPageContent() {
             setLoading(false);
           });
         } else {
+            // For dev mode or if user is somehow null after auth check
+            setUnlockedStages(0);
             setLoading(false);
         }
       } catch (error) {
@@ -169,10 +171,17 @@ function QuestPageContent() {
       }
     };
     
+    if (isDevelopment) {
+        fetchConfigAndProgress(null);
+        return;
+    }
+
     if (!authLoading) {
-      fetchConfigAndProgress();
-    } else if (isDevelopment && authLoading) {
-      fetchConfigAndProgress();
+      if (user) {
+        fetchConfigAndProgress(user);
+      } else {
+        router.replace('/');
+      }
     }
   }, [user, authLoading, router, isDevelopment]);
   
@@ -216,7 +225,7 @@ function QuestPageContent() {
   const boardImageUrl = totalStages > 0 ? `https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fstage-${totalStages}.png?alt=media` : '';
 
 
-  if (loading || (authLoading && !isDevelopment) || !gameConfig) {
+  if (loading) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -224,8 +233,7 @@ function QuestPageContent() {
     );
   }
 
-  if (!user && !isDevelopment) {
-    router.replace('/');
+  if (!isDevelopment && !user) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -339,7 +347,7 @@ function QuestPageContent() {
                             <DialogHeader>
                               <DialogTitle>퀘스트</DialogTitle>
                               <DialogDescription className="pt-2">
-                               {gameConfig.quests[unlockedStages]?.description || `스테이지 ${unlockedStages + 1} 퀘스트를 불러오는 중...`}
+                               {gameConfig?.quests[unlockedStages]?.description || `스테이지 ${unlockedStages + 1} 퀘스트를 불러오는 중...`}
                               </DialogDescription>
                             </DialogHeader>
                             <Button asChild size="lg" className="mt-4 w-full">
@@ -370,5 +378,3 @@ export default function QuestsPage() {
     </Suspense>
   );
 }
-
-    

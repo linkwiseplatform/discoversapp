@@ -64,13 +64,18 @@ export default function RewardsPage() {
   const router = useRouter();
   const isDevelopment = process.env.NODE_ENV === 'development';
   
-  const checkGameCompletion = useCallback(async (user: User | null, config: GameConfig) => {
-    if (!user) { // For dev mode without user
+  const checkGameCompletion = useCallback(async (currentUser: User | null, config: GameConfig) => {
+    if (isDevelopment) {
         setPageLoading(false);
         return;
     }
+    
+    if (!currentUser) {
+       router.replace('/');
+       return;
+    }
 
-    const progressRef = ref(db, `userProgress/${user.uid}`);
+    const progressRef = ref(db, `userProgress/${currentUser.uid}`);
     const snapshot = await get(progressRef);
     if (!snapshot.exists()) {
        router.replace('/');
@@ -88,7 +93,7 @@ export default function RewardsPage() {
     }
     
     setPageLoading(false);
-  }, [router, toast]);
+  }, [router, toast, isDevelopment]);
 
   useEffect(() => {
     const today = new Date();
@@ -96,6 +101,7 @@ export default function RewardsPage() {
     setExpiryDate(today.toLocaleString('ko-KR'));
     
     const fetchGameConfig = async () => {
+      setPageLoading(true);
       try {
         const configRef = ref(db, 'config');
         const snapshot = await get(configRef);
@@ -103,26 +109,26 @@ export default function RewardsPage() {
           const config = snapshot.val();
           setGameConfig(config);
 
-          if (!authLoading) {
-            await checkGameCompletion(user, config);
-          } else if (isDevelopment && authLoading) {
-            await checkGameCompletion(null, config);
+          if (isDevelopment) {
+              await checkGameCompletion(null, config);
+          } else if (!authLoading) {
+              await checkGameCompletion(user, config);
           }
         } else {
            toast({ title: '게임 설정을 불러오지 못했습니다.', variant: 'destructive'});
-           if (!isDevelopment) router.replace('/');
-           else setPageLoading(false);
+           if (isDevelopment) setPageLoading(false);
+           else router.replace('/');
         }
       } catch (error) {
         console.error(error);
         toast({ title: '오류가 발생했습니다.', variant: 'destructive'});
-        if (!isDevelopment) router.replace('/');
-        else setPageLoading(false);
+        if (isDevelopment) setPageLoading(false);
+        else router.replace('/');
       }
     };
     
     fetchGameConfig();
-  }, [user, authLoading, router, toast, checkGameCompletion, isDevelopment]);
+  }, [user, authLoading, checkGameCompletion, isDevelopment, router, toast]);
 
 
   const handleAdminValidate = async () => {
@@ -152,7 +158,7 @@ export default function RewardsPage() {
     }
   };
   
-  if (pageLoading || (authLoading && !isDevelopment)) {
+  if (pageLoading) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -190,5 +196,3 @@ export default function RewardsPage() {
       </div>
   );
 }
-
-    

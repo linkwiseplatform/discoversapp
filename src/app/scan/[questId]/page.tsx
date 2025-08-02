@@ -37,6 +37,7 @@ export default function ScanPage() {
 
   useEffect(() => {
      const fetchGameConfig = async () => {
+      setPageLoading(true);
       try {
         const configRef = ref(db, 'config');
         const snapshot = await get(configRef);
@@ -146,10 +147,12 @@ export default function ScanPage() {
   }, [handleValidate, isScanning]);
 
   useEffect(() => {
-    if (isDevelopment || authLoading) {
-      if (isDevelopment) setHasCameraPermission(true);
+    if (isDevelopment) {
+      setHasCameraPermission(true); // Assume permission in dev
+      setIsScanning(false); // Don't start scanning automatically in dev
       return;
     }
+    if (authLoading) return;
 
     let stream: MediaStream | null = null;
     const getCameraPermission = async () => {
@@ -195,7 +198,7 @@ export default function ScanPage() {
     };
   }, [isScanning, hasCameraPermission, isDevelopment, tick]);
 
-  if ((authLoading && !isDevelopment) || pageLoading) {
+  if (pageLoading) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -301,5 +304,3 @@ export default function ScanPage() {
     </div>
   );
 }
-
-    
