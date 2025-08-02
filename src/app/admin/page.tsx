@@ -53,7 +53,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   const [admins, setAdmins] = useState<Record<string, Admin>>({});
   const [config, setConfig] = useState<GameConfig | null>(null);
   const [qrCodeUrls, setQrCodeUrls] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
   const [newAdminName, setNewAdminName] = useState('');
@@ -63,7 +63,6 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
       try {
         const adminRef = ref(db, 'admins');
         const configRef = ref(db, 'config');
@@ -210,8 +209,11 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   if (loading || !config) {
     return (
       <div className="container py-8 space-y-6">
-        <Skeleton className="h-10 w-1/3" />
-        <Card><CardHeader><Skeleton className="h-8 w-1/4" /></CardHeader><CardContent><Skeleton className="h-24 w-full" /></CardContent></Card>
+        <div className="flex justify-between items-center">
+            <Skeleton className="h-10 w-1/3" />
+            <Skeleton className="h-10 w-36" />
+        </div>
+        <Card><CardHeader><Skeleton className="h-8 w-1/4" /></CardHeader><CardContent><Skeleton className="h-36 w-full" /></CardContent></Card>
         <Card><CardHeader><Skeleton className="h-8 w-1/4" /></CardHeader><CardContent><Skeleton className="h-48 w-full" /></CardContent></Card>
         <Card><CardHeader><Skeleton className="h-8 w-1/4" /></CardHeader><CardContent><Skeleton className="h-64 w-full" /></CardContent></Card>
       </div>
@@ -375,7 +377,6 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   );
 }
 
-// Wrapper component for production logic
 function Page() {
   const { user, loading, loginWithGoogle, isAdmin, isAdminLoading } = useAuth();
   const router = useRouter();
@@ -404,11 +405,8 @@ function Page() {
   return <AdminDashboard currentUser={user} />;
 }
 
-// Main export decision based on environment
 export default function AdminPage() {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
-  if (isDevelopment) {
+  if (process.env.NODE_ENV === 'development') {
     const devUser: User = { 
       uid: 'dev-user', 
       displayName: '개발자',

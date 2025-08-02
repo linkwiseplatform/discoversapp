@@ -52,12 +52,12 @@ function CouponCard({ isDisabled, expiryDate, config }: { isDisabled: boolean, e
   );
 }
 
-function RewardsPageContent({ user, isDevelopment }: { user: User | null, isDevelopment: boolean }) {
+function RewardsPageContent({ user }: { user: User | null }) {
   const [couponDisabled, setCouponDisabled] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const { toast } = useToast();
   const router = useRouter();
@@ -88,7 +88,6 @@ function RewardsPageContent({ user, isDevelopment }: { user: User | null, isDeve
     setExpiryDate(today.toLocaleString('ko-KR'));
     
     const fetchGameConfig = async () => {
-      setLoading(true);
       try {
         const configRef = ref(db, 'config');
         const snapshot = await get(configRef);
@@ -96,7 +95,7 @@ function RewardsPageContent({ user, isDevelopment }: { user: User | null, isDeve
           const config = snapshot.val();
           setGameConfig(config);
           
-          if (user && !isDevelopment) {
+          if (user) {
             await checkGameCompletion(user, config);
           }
         } else {
@@ -111,11 +110,11 @@ function RewardsPageContent({ user, isDevelopment }: { user: User | null, isDeve
     };
     
     fetchGameConfig();
-  }, [user, isDevelopment, checkGameCompletion, toast]);
+  }, [user, checkGameCompletion, toast]);
 
 
   const handleAdminValidate = async () => {
-    if (!user && !isDevelopment) {
+    if (!user) {
        toast({ title: '로그인이 필요합니다.', variant: 'destructive' });
        return;
     }
@@ -127,10 +126,8 @@ function RewardsPageContent({ user, isDevelopment }: { user: User | null, isDeve
         description: '보상 쿠폰이 사용 처리되었습니다.',
       });
       
-      if(user){
-        const progressRef = ref(db, `userProgress/${user.uid}`);
-        await update(progressRef, { couponUsedTimestamp: new Date().getTime() });
-      }
+      const progressRef = ref(db, `userProgress/${user.uid}`);
+      await update(progressRef, { couponUsedTimestamp: new Date().getTime() });
 
     } else {
        toast({
@@ -141,7 +138,7 @@ function RewardsPageContent({ user, isDevelopment }: { user: User | null, isDeve
     setAdminCode('');
   };
   
-  if (loading || !gameConfig) {
+  if (loading) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -201,14 +198,12 @@ function Page() {
         );
     }
     
-    return <RewardsPageContent user={user} isDevelopment={false}/>;
+    return <RewardsPageContent user={user}/>;
 }
 
 export default function RewardsPage() {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    
-    if (isDevelopment) {
-      return <RewardsPageContent user={null} isDevelopment={true} />;
+    if (process.env.NODE_ENV === 'development') {
+      return <RewardsPageContent user={null} />;
     }
 
     return <Page />;

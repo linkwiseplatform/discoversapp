@@ -15,7 +15,7 @@ import jsQR from 'jsqr';
 import { Input } from '@/components/ui/input';
 import type { GameConfig } from '@/lib/types';
 
-function ScanPageContent({ user, isDevelopment }: { user: User | null, isDevelopment: boolean }) {
+function ScanPageContent({ user }: { user: User | null }) {
   const router = useRouter();
   const params = useParams();
   const questIndex = parseInt(typeof params.questId === 'string' ? params.questId : '-1', 10);
@@ -26,15 +26,15 @@ function ScanPageContent({ user, isDevelopment }: { user: User | null, isDevelop
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [devCode, setDevCode] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>();
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
      const fetchGameConfig = async () => {
-      setLoading(true);
       try {
         const configRef = ref(db, 'config');
         const snapshot = await get(configRef);
@@ -66,7 +66,7 @@ function ScanPageContent({ user, isDevelopment }: { user: User | null, isDevelop
     }
 
     if (scannedCode.trim().toUpperCase() === quest.qrCode.toUpperCase()) {
-      if(user && !isDevelopment) {
+      if(user) {
         try {
           const progressRef = ref(db, `userProgress/${user.uid}`);
           const snapshot = await get(progressRef);
@@ -190,7 +190,7 @@ function ScanPageContent({ user, isDevelopment }: { user: User | null, isDevelop
     };
   }, [isScanning, hasCameraPermission, isDevelopment, tick]);
 
-  if (loading || !gameConfig) {
+  if (loading) {
     return (
         <div className="flex h-screen items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -198,7 +198,7 @@ function ScanPageContent({ user, isDevelopment }: { user: User | null, isDevelop
     );
   }
   
-  const quest = gameConfig.quests[questIndex];
+  const quest = gameConfig?.quests[questIndex];
   if (!quest) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
@@ -311,14 +311,12 @@ function Page() {
         );
     }
     
-    return <ScanPageContent user={user} isDevelopment={false} />;
+    return <ScanPageContent user={user} />;
 }
 
 export default function ScanPage() {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    
-    if (isDevelopment) {
-      return <ScanPageContent user={null} isDevelopment={true} />;
+    if (process.env.NODE_ENV === 'development') {
+      return <ScanPageContent user={null} />;
     }
     
     return <Page />;
