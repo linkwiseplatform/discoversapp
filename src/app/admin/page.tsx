@@ -20,6 +20,14 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Trash2, UserPlus, Download, Loader2, Users } from 'lucide-react';
 
 const DEFAULT_QUEST = { description: '', qrCode: '' };
+const DEFAULT_CONFIG: GameConfig = {
+    numberOfStages: 3,
+    quests: Array(3).fill(DEFAULT_QUEST),
+    couponTitle: '보상 쿠폰',
+    couponSubtitle: '모험을 완료해주셔서 감사합니다!',
+    adminCode: '1234',
+    gameStartCode: 'START',
+};
 
 const KakaoIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -50,20 +58,8 @@ function AdminLoginPage({ onLogin }: { onLogin: () => void }) {
 
 function AdminDashboard({ currentUser }: { currentUser: User }) {
   const { toast } = useToast();
-  const [admins, setAdmins] = useState<Record<string, Admin>>({ 'dev-id': {id: 'dev-user', name: '개발자' }});
-  const [config, setConfig] = useState<GameConfig | null>(() => {
-     if (process.env.NODE_ENV === 'development') {
-        return {
-            numberOfStages: 3,
-            quests: Array(3).fill(DEFAULT_QUEST),
-            couponTitle: '보상 쿠폰',
-            couponSubtitle: '모험을 완료해주셔서 감사합니다!',
-            adminCode: '1234',
-            gameStartCode: 'START',
-        }
-     }
-     return null;
-  });
+  const [admins, setAdmins] = useState<Record<string, Admin>>({});
+  const [config, setConfig] = useState<GameConfig | null>(null);
   const [qrCodeUrls, setQrCodeUrls] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   
@@ -75,7 +71,11 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
-    if (isDevelopment) return;
+    if (isDevelopment) {
+      setAdmins({ 'dev-id': {id: 'dev-user', name: '개발자' }});
+      setConfig(DEFAULT_CONFIG);
+      return;
+    }
 
     const fetchData = async () => {
       try {
@@ -84,20 +84,17 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
         
         const [adminSnapshot, configSnapshot] = await Promise.all([get(adminRef), get(configRef)]);
 
-        if (adminSnapshot.exists()) setAdmins(adminSnapshot.val());
+        if (adminSnapshot.exists()) {
+          setAdmins(adminSnapshot.val());
+        } else {
+           setAdmins({});
+        }
         
         let fetchedConfig: GameConfig;
         if (configSnapshot.exists()) {
            fetchedConfig = configSnapshot.val();
         } else {
-            fetchedConfig = {
-                numberOfStages: 3,
-                quests: Array(3).fill(DEFAULT_QUEST),
-                couponTitle: '보상 쿠폰',
-                couponSubtitle: '모험을 완료해주셔서 감사합니다!',
-                adminCode: '1234',
-                gameStartCode: 'START',
-            };
+           fetchedConfig = DEFAULT_CONFIG;
         }
         
         const numStages = fetchedConfig.numberOfStages || 3;
@@ -153,6 +150,10 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   };
   
   const handleSaveAll = async () => {
+    if (isDevelopment) {
+        toast({ title: '성공 (개발 모드)', description: '저장되었습니다.' });
+        return;
+    }
     setSaving(true);
     try {
         await set(ref(db, 'config'), config);
@@ -442,5 +443,3 @@ export default function AdminPage() {
 
   return <Page />;
 }
-
-    
