@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardHeaderProps } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
@@ -31,7 +31,7 @@ function GameInstructionsDialog() {
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">게임 설명</DialogTitle>
           <DialogDescription>
-            discoversapp에 오신 것을 환영합니다! 모험을 시작하는 방법은 다음과 같습니다.
+            공룡 어드벤처에 오신 것을 환영합니다! 모험을 시작하는 방법은 다음과 같습니다.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
