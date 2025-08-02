@@ -118,7 +118,9 @@ export default function RewardsPage() {
       }
     };
     
-    fetchGameConfig();
+    if (!authLoading) {
+        fetchGameConfig();
+    }
   }, [user, authLoading, router, toast, checkGameCompletion]);
 
 

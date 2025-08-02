@@ -165,11 +165,11 @@ function QuestPageContent() {
             const data = snapshot.val();
             const stages = data?.unlockedStages ?? 0;
             setUnlockedStages(stages);
-            setLoading(false); // Set loading to false after getting user progress
+            setLoading(false); 
           });
         } else if (process.env.NODE_ENV === 'development') {
-            setUnlockedStages(0); // Dev default
-            setLoading(false); // Set loading to false in dev mode
+            setUnlockedStages(0); 
+            setLoading(false);
         }
       } catch (error) {
         console.error("Failed to fetch game config:", error);
@@ -366,5 +366,3 @@ export default function QuestsPage() {
     </Suspense>
   );
 }
-
-    

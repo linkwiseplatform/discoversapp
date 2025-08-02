@@ -164,6 +164,10 @@ export default function ScanPage() {
       }
     };
 
+    if (!user && !isDevelopment) {
+        router.replace('/');
+        return;
+    }
     getCameraPermission();
 
     return () => {
@@ -171,7 +175,7 @@ export default function ScanPage() {
       setIsScanning(false);
       if (stream) stream.getTracks().forEach(track => track.stop());
     };
-  }, [isDevelopment, toast]);
+  }, [isDevelopment, toast, user, router]);
 
   useEffect(() => {
     if (isScanning && hasCameraPermission && !isDevelopment) {
