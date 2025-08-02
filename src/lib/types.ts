@@ -33,4 +33,7 @@ export interface UserProgress {
   lastPlayed: number;
   unlockedStages: number;
   couponUsedTimestamp?: number;
+  character?: Character;
 }
+
+    

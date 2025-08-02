@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { QrCode, Loader2 } from 'lucide-react';
 import { useAuth, User } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { ref, onValue, get, set } from 'firebase/database';
+import { ref, onValue, get, set, update } from 'firebase/database';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { Character, GameConfig, UserProgress } from '@/lib/types';
 
@@ -131,7 +131,7 @@ const boardImageUrls: Record<number, string> = {
 
 function QuestPageContent({ user }: { user: User | null }) {
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
-  const [character, setCharacter] = useState<Character>('female');
+  const [character, setCharacter] = useState<Character | null>(null);
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [pageLoading, setPageLoading] = useState(false);
 
@@ -142,13 +142,6 @@ function QuestPageContent({ user }: { user: User | null }) {
 
   const unlockedStages = userProgress?.unlockedStages ?? 0;
   const totalStages = gameConfig?.numberOfStages ?? 0;
-  
-
-  useEffect(() => {
-     if (Math.random() > 0.5) {
-        setCharacter('male');
-     }
-  }, []);
 
   useEffect(() => {
     if (isDevelopment) return;
@@ -179,11 +172,25 @@ function QuestPageContent({ user }: { user: User | null }) {
             if (snapshot.exists()) {
               const data: UserProgress = snapshot.val();
               setUserProgress(data);
-              if (data.character) {
+               if (data.character) {
                   setCharacter(data.character);
+              } else {
+                  const newCharacter = Math.random() > 0.5 ? 'male' : 'female';
+                  setCharacter(newCharacter);
+                  update(progressRef, { character: newCharacter });
               }
             } else {
-              setUserProgress({ uid: user.uid, name: user.displayName || '탐험가', unlockedStages: 0, lastPlayed: Date.now() });
+              const newCharacter = Math.random() > 0.5 ? 'male' : 'female';
+              setCharacter(newCharacter);
+              const initialProgress = { 
+                  uid: user.uid, 
+                  name: user.displayName || '탐험가', 
+                  unlockedStages: 0, 
+                  lastPlayed: Date.now(),
+                  character: newCharacter
+              };
+              set(progressRef, initialProgress);
+              setUserProgress(initialProgress);
             }
             setPageLoading(false);
           });
@@ -212,6 +219,7 @@ function QuestPageContent({ user }: { user: User | null }) {
       };
       setGameConfig(devConfig);
       setUserProgress({ uid: 'dev-user', name: '개발자', unlockedStages: 0, lastPlayed: Date.now() });
+      setCharacter('female');
     }
   }, [isDevelopment]);
   
@@ -233,19 +241,20 @@ function QuestPageContent({ user }: { user: User | null }) {
   };
   
   const handleGenderToggle = async () => {
+    if (!character) return;
     const newCharacter = character === 'male' ? 'female' : 'male';
-    setCharacter(newCharacter); // Update local state immediately for instant feedback
+    setCharacter(newCharacter); 
     if(user && !isDevelopment) {
         try {
-            await set(ref(db, `userProgress/${user.uid}/character`), newCharacter);
+            await update(ref(db, `userProgress/${user.uid}`), { character: newCharacter });
         } catch (error) {
             console.error("Failed to save character preference:", error);
-            // Optionally, revert the change and show a toast message
         }
     }
   };
 
   const currentHunterPosition = useMemo(() => {
+    if (!character) return null;
     if (unlockedStages === 0) {
       return hunterStartPositions[character];
     }
@@ -264,7 +273,7 @@ function QuestPageContent({ user }: { user: User | null }) {
   const boardImageUrl = boardImageUrls[totalStages] || '';
 
 
-  if (pageLoading) {
+  if (pageLoading || !character) {
     return (
         <div className="flex h-screen items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -335,24 +344,26 @@ function QuestPageContent({ user }: { user: User | null }) {
                 <StageClearAnimation position={showConfettiAt} />
                 {!allComplete && (
                   <>
-                    <div
-                      key={character} 
-                      className="absolute z-20 h-auto transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                      style={{
-                        width: character === 'female' ? '71%' : '77.5%',
-                        ...currentHunterPosition,
-                        transition: 'top 1s ease-in-out, left 1s ease-in-out',
-                      }}
-                    >
-                      <Image
-                        src={hunterImages[character]}
-                        width={140}
-                        height={140}
-                        alt={character === 'female' ? "여자 탐험가 캐릭터" : "남자 탐험가 캐릭터"}
-                        className="w-full h-auto object-contain"
-                        data-ai-hint={character === 'female' ? "female explorer" : "male explorer"}
-                      />
-                    </div>
+                    {currentHunterPosition && (
+                      <div
+                        key={character} 
+                        className="absolute z-20 h-auto transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                        style={{
+                          width: character === 'female' ? '71%' : '77.5%',
+                          ...currentHunterPosition,
+                          transition: 'top 1s ease-in-out, left 1s ease-in-out',
+                        }}
+                      >
+                        <Image
+                          src={hunterImages[character]}
+                          width={140}
+                          height={140}
+                          alt={character === 'female' ? "여자 탐험가 캐릭터" : "남자 탐험가 캐릭터"}
+                          className="w-full h-auto object-contain"
+                          data-ai-hint={character === 'female' ? "female explorer" : "male explorer"}
+                        />
+                      </div>
+                    )}
                     
                     {currentQuestPosition && (
                       <div
@@ -428,7 +439,8 @@ function Page() {
 }
 
 export default function QuestsPage() {
-  if (process.env.NODE_ENV === 'development') {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  if (isDevelopment) {
     const devUser: User = { 
       uid: 'dev-user', 
       displayName: '개발자',
@@ -451,3 +463,5 @@ export default function QuestsPage() {
   
   return <Page />;
 }
+
+    
