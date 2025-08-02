@@ -163,7 +163,7 @@ export default function Home() {
              <div className="flex justify-center">
                <GameInstructionsDialog />
              </div>
-            <CardDescription className="text-base pt-2 text-white/90">로그인 정보는 게임 진행 상황을 저장하기 위해서만 사용됩니다.</CardDescription>
+            <CardDescription className="text-sm pt-2 text-white/90">로그인 정보는 게임 진행 상황을 저장하기 위해서만 사용됩니다.</CardDescription>
           </CardHeader>
           <CardContent>
              {showLogin ? (
