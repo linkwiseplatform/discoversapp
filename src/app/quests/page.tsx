@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { QrCode, Loader2 } from 'lucide-react';
 import { useAuth, User } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { ref, onValue, get } from 'firebase/database';
+import { ref, onValue, get, set } from 'firebase/database';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { Character, GameConfig, UserProgress } from '@/lib/types';
 
@@ -88,40 +88,46 @@ const GameWonOverlay = () => {
             transform: scale(0);
             opacity: 0;
         }
+        @keyframes burst {
+            0% { transform: rotate(var(--angle-start)) translate(0); opacity: 1; }
+            100% { transform: rotate(var(--angle-end)) translate(var(--distance)); opacity: 0; }
+        }
+        .animate-burst { animation: burst 0.6s ease-out forwards; position: absolute; }
       `}</style>
     </div>
   );
 };
 
+// Character and Quest Positions
 const hunterStartPositions = {
     female: { top: '-6%', left: '-30%' },
     male: { top: '-6%', left: '-30%' },
 };
 
 const questPositions = [
-    { top: '0%', left: '50%' },
-    { top: '10.5%', left: '50%' },
-    { top: '21%', left: '50%' },
-    { top: '31.5%', left: '50%' },
-    { top: '42%', left: '50%' },
-    { top: '52.5%', left: '50%' },
-    { top: '63%', left: '50%' },
-    { top: '73.5%', left: '50%' },
-    { top: '84%', left: '50%' },
-    { top: '94.5%', left: '50%' }
+    { top: '0%', left: '50%' },      // 1번 퀘스트
+    { top: '10.5%', left: '50%' },   // 2번 퀘스트
+    { top: '21%', left: '50%' },     // 3번 퀘스트
+    { top: '31.5%', left: '50%' },   // 4번 퀘스트
+    { top: '42%', left: '50%' },     // 5번 퀘스트
+    { top: '52.5%', left: '50%' },   // 6번 퀘스트
+    { top: '63%', left: '50%' },     // 7번 퀘스트
+    { top: '73.5%', left: '50%' },   // 8번 퀘스트
+    { top: '84%', left: '50%' },     // 9번 퀘스트
+    { top: '94.5%', left: '50%' }    // 10번 퀘스트
 ];
 
 
 function QuestPageContent({ user }: { user: User | null }) {
-  const [unlockedStages, setUnlockedStages] = useState(0);
+  const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [character, setCharacter] = useState<Character>('female');
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
 
-  const prevUnlockedStages = usePrevious(unlockedStages);
+  const prevUnlockedStages = usePrevious(userProgress?.unlockedStages);
   const [showConfettiAt, setShowConfettiAt] = useState<{ top: string, left: string } | null>(null);
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
+
+  const unlockedStages = userProgress?.unlockedStages ?? 0;
   const totalStages = gameConfig?.numberOfStages ?? 0;
 
   useEffect(() => {
@@ -132,6 +138,7 @@ function QuestPageContent({ user }: { user: User | null }) {
 
   useEffect(() => {
     const fetchConfigAndProgress = async () => {
+      setPageLoading(true);
       try {
         const configRef = ref(db, 'config');
         const configSnapshot = await get(configRef);
@@ -142,8 +149,8 @@ function QuestPageContent({ user }: { user: User | null }) {
            fetchedConfig = {
                 numberOfStages: 5,
                 quests: Array(5).fill({description: "퀘스트 설명을 설정해주세요.", qrCode: "CHANGE_ME"}),
-                couponTitle: 'Reward Coupon',
-                couponSubtitle: 'Thanks for playing!',
+                couponTitle: '보상 쿠폰',
+                couponSubtitle: '모험을 완료해주셔서 감사합니다!',
                 adminCode: '0000',
                 gameStartCode: 'START'
             };
@@ -153,11 +160,14 @@ function QuestPageContent({ user }: { user: User | null }) {
         if (user) {
           const progressRef = ref(db, `userProgress/${user.uid}`);
           onValue(progressRef, (snapshot) => {
-            const data: UserProgress | null = snapshot.val();
-            const stages = data?.unlockedStages ?? 0;
-            setUnlockedStages(stages);
-            if (data?.character) {
-              setCharacter(data.character);
+            if (snapshot.exists()) {
+              const data: UserProgress = snapshot.val();
+              setUserProgress(data);
+              if (data.character) {
+                  setCharacter(data.character);
+              }
+            } else {
+              setUserProgress({ uid: user.uid, name: user.displayName || '탐험가', unlockedStages: 0, lastPlayed: Date.now() });
             }
           });
         }
@@ -174,7 +184,7 @@ function QuestPageContent({ user }: { user: User | null }) {
   
    useEffect(() => {
     if (typeof prevUnlockedStages !== 'undefined' && unlockedStages > prevUnlockedStages) {
-      const completedStageIndex = prevUnlockedStages;
+      const completedStageIndex = prevUnlockedStages; // 0-indexed, so it's the stage that was just cleared
       if (completedStageIndex < questPositions.length) {
         const confettiPosition = questPositions[completedStageIndex];
         setShowConfettiAt(confettiPosition);
@@ -182,15 +192,19 @@ function QuestPageContent({ user }: { user: User | null }) {
         return () => clearTimeout(timer);
       }
     }
-  }, [unlockedStages, prevUnlockedStages]);
+   }, [unlockedStages, prevUnlockedStages]);
 
   const hunterImages = {
     female: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/girl.png?alt=media&token=99cbe3f4-6423-4196-b0ad-72600ded9605",
     male: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/boy.png?alt=media&token=c96f6d8a-40b7-4b70-b1cb-b7d6e6759bf8",
   };
   
-  const handleGenderToggle = () => {
-    setCharacter(prev => (prev === 'male' ? 'female' : 'male'));
+  const handleGenderToggle = async () => {
+    const newCharacter = character === 'male' ? 'female' : 'male';
+    setCharacter(newCharacter);
+    if(user) {
+        await set(ref(db, `userProgress/${user.uid}/character`), newCharacter);
+    }
   };
 
   const currentHunterPosition = useMemo(() => {
@@ -209,10 +223,10 @@ function QuestPageContent({ user }: { user: User | null }) {
 
   const progressPercentage = totalStages > 0 ? (unlockedStages / totalStages) * 100 : 0;
   const allComplete = totalStages > 0 && unlockedStages >= totalStages;
-  const boardImageUrl = totalStages > 0 ? `https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fstage-${totalStages}.png?alt=media` : '';
+  const boardImageUrl = totalStages > 0 ? `https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-${totalStages}.png?alt=media` : '';
 
 
-  if (pageLoading && !isDevelopment) {
+  if (pageLoading) {
     return (
         <div className="flex h-screen items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -265,25 +279,26 @@ function QuestPageContent({ user }: { user: User | null }) {
           />
           <div className="absolute inset-0 pointer-events-none">
              <div
-                className="relative w-full h-full flex justify-center items-start overflow-y-auto pointer-events-auto"
+                className="relative w-full h-full flex justify-center items-start overflow-y-auto"
               >
               <div
-                className="absolute top-[35%] w-[28%] h-auto"
+                className="absolute top-[35%] w-[28%] h-auto pointer-events-auto"
               >
-                 {boardImageUrl && <Image
+                 {boardImageUrl ? <Image
                     src={boardImageUrl}
-                    alt={`Stage-${totalStages}`}
+                    alt={`총 ${totalStages}개의 스테이지가 있는 게임 보드`}
                     width={594} 
                     height={3840} 
                     className="w-full h-auto object-top"
                     data-ai-hint="stage background"
-                  />}
+                    priority
+                  /> : <div className="w-full aspect-[594/3840] bg-muted/20 rounded-md flex items-center justify-center text-white">보드판을 불러오는 중...</div>}
                   
                 <StageClearAnimation position={showConfettiAt} />
                 {!allComplete && (
                   <>
                     <div
-                      key={unlockedStages}
+                      key={character} 
                       className="absolute z-20 h-auto transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                       style={{
                         width: character === 'female' ? '71%' : '77.5%',
@@ -295,9 +310,9 @@ function QuestPageContent({ user }: { user: User | null }) {
                         src={hunterImages[character]}
                         width={140}
                         height={140}
-                        alt={character === 'female' ? "여자 헌터 캐릭터" : "남자 헌터 캐릭터"}
+                        alt={character === 'female' ? "여자 탐험가 캐릭터" : "남자 탐험가 캐릭터"}
                         className="w-full h-auto object-contain"
-                        data-ai-hint={character === 'female' ? "female hunter" : "male hunter"}
+                        data-ai-hint={character === 'female' ? "female explorer" : "male explorer"}
                       />
                     </div>
                     
@@ -311,12 +326,12 @@ function QuestPageContent({ user }: { user: User | null }) {
                       >
                          <Dialog>
                           <DialogTrigger asChild>
-                            <button className="focus:outline-none animate-jump">
+                            <button className="focus:outline-none animate-bounce">
                               <Image
                                 src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/quest.png?alt=media&token=e5dd45f9-a905-4475-bd03-c387bbb02a31"
                                 width={50}
                                 height={50}
-                                alt="현재 퀘스트"
+                                alt="현재 퀘스트 위치를 나타내는 물음표 아이콘"
                                 className="w-full h-auto cursor-pointer"
                                 data-ai-hint="quest marker"
                               />
@@ -324,8 +339,8 @@ function QuestPageContent({ user }: { user: User | null }) {
                           </DialogTrigger>
                           <DialogContent className="sm:max-w-md text-center bg-background">
                             <DialogHeader>
-                              <DialogTitle>퀘스트</DialogTitle>
-                              <DialogDescription className="pt-2">
+                              <DialogTitle className="font-headline">퀘스트 {unlockedStages + 1}</DialogTitle>
+                              <DialogDescription className="pt-2 text-base">
                                {gameConfig?.quests[unlockedStages]?.description || `스테이지 ${unlockedStages + 1} 퀘스트를 불러오는 중...`}
                               </DialogDescription>
                             </DialogHeader>
@@ -399,3 +414,5 @@ export default function QuestsPage() {
   
   return <Page />;
 }
+
+    
