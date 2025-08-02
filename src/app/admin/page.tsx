@@ -53,7 +53,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   const [admins, setAdmins] = useState<Record<string, Admin>>({});
   const [config, setConfig] = useState<GameConfig | null>(null);
   const [qrCodeUrls, setQrCodeUrls] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   
   const [newAdminName, setNewAdminName] = useState('');
@@ -207,7 +207,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
       }
   };
 
-  if (loading) {
+  if (loading || !config) {
     return (
       <div className="container py-8 space-y-6">
         <Skeleton className="h-10 w-1/3" />
@@ -217,8 +217,6 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
       </div>
     );
   }
-  
-  if (!config) return <p>설정을 불러올 수 없습니다.</p>;
 
   return (
     <div className="container py-8 space-y-6">
@@ -433,3 +431,5 @@ export default function AdminPage() {
 
   return <Page />;
 }
+
+    

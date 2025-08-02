@@ -112,11 +112,11 @@ const questPositions = [
 ];
 
 
-function QuestPageContent({ user }: { user: User | null }) {
+function QuestPageContent({ user, isDevelopment }: { user: User | null, isDevelopment: boolean }) {
   const [unlockedStages, setUnlockedStages] = useState(0);
   const [character, setCharacter] = useState<Character>('female');
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const prevUnlockedStages = usePrevious(unlockedStages);
   const [showConfettiAt, setShowConfettiAt] = useState<{ top: string, left: string } | null>(null);
@@ -159,15 +159,11 @@ function QuestPageContent({ user }: { user: User | null }) {
             if (data?.character) {
               setCharacter(data.character);
             }
-            setLoading(false);
           });
-        } else {
-           // For dev mode or non-logged-in users
-           setUnlockedStages(0);
-           setLoading(false);
         }
       } catch (error) {
         console.error("Failed to fetch game config:", error);
+      } finally {
         setLoading(false);
       }
     };
@@ -216,7 +212,7 @@ function QuestPageContent({ user }: { user: User | null }) {
   const boardImageUrl = totalStages > 0 ? `https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fstage-${totalStages}.png?alt=media` : '';
 
 
-  if (loading) {
+  if (loading && !gameConfig) {
     return (
         <div className="flex h-screen items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -375,15 +371,17 @@ function Page() {
     );
   }
   
-  return <QuestPageContent user={user} />;
+  return <QuestPageContent user={user} isDevelopment={false}/>;
 }
 
 export default function QuestsPage() {
     const isDevelopment = process.env.NODE_ENV === 'development';
     
     if (isDevelopment) {
-      return <QuestPageContent user={null} />;
+      return <QuestPageContent user={null} isDevelopment={true} />;
     }
     
     return <Page />;
 }
+
+    

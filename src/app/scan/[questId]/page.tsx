@@ -15,7 +15,7 @@ import jsQR from 'jsqr';
 import { Input } from '@/components/ui/input';
 import type { GameConfig } from '@/lib/types';
 
-function ScanPageContent({ user }: { user: User | null }) {
+function ScanPageContent({ user, isDevelopment }: { user: User | null, isDevelopment: boolean }) {
   const router = useRouter();
   const params = useParams();
   const questIndex = parseInt(typeof params.questId === 'string' ? params.questId : '-1', 10);
@@ -26,17 +26,15 @@ function ScanPageContent({ user }: { user: User | null }) {
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [devCode, setDevCode] = useState('');
-  const [pageLoading, setPageLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>();
 
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
   useEffect(() => {
      const fetchGameConfig = async () => {
-      setPageLoading(true);
+      setLoading(true);
       try {
         const configRef = ref(db, 'config');
         const snapshot = await get(configRef);
@@ -46,7 +44,7 @@ function ScanPageContent({ user }: { user: User | null }) {
       } catch (e) {
         console.error("Failed to fetch game config", e)
       } finally {
-        setPageLoading(false);
+        setLoading(false);
       }
     };
     fetchGameConfig();
@@ -68,7 +66,7 @@ function ScanPageContent({ user }: { user: User | null }) {
     }
 
     if (scannedCode.trim().toUpperCase() === quest.qrCode.toUpperCase()) {
-      if(user) {
+      if(user && !isDevelopment) {
         try {
           const progressRef = ref(db, `userProgress/${user.uid}`);
           const snapshot = await get(progressRef);
@@ -192,20 +190,12 @@ function ScanPageContent({ user }: { user: User | null }) {
     };
   }, [isScanning, hasCameraPermission, isDevelopment, tick]);
 
-  if (pageLoading) {
+  if (loading || !gameConfig) {
     return (
         <div className="flex h-screen items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
-  }
-
-  if (!gameConfig) {
-      return (
-           <div className="flex h-screen items-center justify-center bg-black">
-            <p className="text-white">게임 설정을 불러오지 못했습니다.</p>
-        </div>
-      )
   }
   
   const quest = gameConfig.quests[questIndex];
@@ -321,15 +311,17 @@ function Page() {
         );
     }
     
-    return <ScanPageContent user={user} />;
+    return <ScanPageContent user={user} isDevelopment={false} />;
 }
 
 export default function ScanPage() {
     const isDevelopment = process.env.NODE_ENV === 'development';
     
     if (isDevelopment) {
-      return <ScanPageContent user={null} />;
+      return <ScanPageContent user={null} isDevelopment={true} />;
     }
     
     return <Page />;
 }
+
+    

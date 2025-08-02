@@ -52,22 +52,17 @@ function CouponCard({ isDisabled, expiryDate, config }: { isDisabled: boolean, e
   );
 }
 
-function RewardsPageContent({ user }: { user: User | null }) {
+function RewardsPageContent({ user, isDevelopment }: { user: User | null, isDevelopment: boolean }) {
   const [couponDisabled, setCouponDisabled] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const { toast } = useToast();
   const router = useRouter();
   
-  const checkGameCompletion = useCallback(async (currentUser: User | null, config: GameConfig) => {
-    if (!currentUser) {
-       router.replace('/');
-       return false;
-    }
-
+  const checkGameCompletion = useCallback(async (currentUser: User, config: GameConfig) => {
     const progressRef = ref(db, `userProgress/${currentUser.uid}`);
     const snapshot = await get(progressRef);
     if (!snapshot.exists()) {
@@ -93,7 +88,7 @@ function RewardsPageContent({ user }: { user: User | null }) {
     setExpiryDate(today.toLocaleString('ko-KR'));
     
     const fetchGameConfig = async () => {
-      setPageLoading(true);
+      setLoading(true);
       try {
         const configRef = ref(db, 'config');
         const snapshot = await get(configRef);
@@ -101,7 +96,7 @@ function RewardsPageContent({ user }: { user: User | null }) {
           const config = snapshot.val();
           setGameConfig(config);
           
-          if (user) {
+          if (user && !isDevelopment) {
             await checkGameCompletion(user, config);
           }
         } else {
@@ -111,16 +106,16 @@ function RewardsPageContent({ user }: { user: User | null }) {
         console.error(error);
         toast({ title: '오류가 발생했습니다.', variant: 'destructive'});
       } finally {
-        setPageLoading(false);
+        setLoading(false);
       }
     };
     
     fetchGameConfig();
-  }, [user, checkGameCompletion, toast]);
+  }, [user, isDevelopment, checkGameCompletion, toast]);
 
 
   const handleAdminValidate = async () => {
-    if (!user && process.env.NODE_ENV !== 'development') {
+    if (!user && !isDevelopment) {
        toast({ title: '로그인이 필요합니다.', variant: 'destructive' });
        return;
     }
@@ -146,7 +141,7 @@ function RewardsPageContent({ user }: { user: User | null }) {
     setAdminCode('');
   };
   
-  if (pageLoading) {
+  if (loading || !gameConfig) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -206,16 +201,17 @@ function Page() {
         );
     }
     
-    return <RewardsPageContent user={user} />;
+    return <RewardsPageContent user={user} isDevelopment={false}/>;
 }
 
 export default function RewardsPage() {
     const isDevelopment = process.env.NODE_ENV === 'development';
     
     if (isDevelopment) {
-      const devUser: User | null = null;
-      return <RewardsPageContent user={devUser} />;
+      return <RewardsPageContent user={null} isDevelopment={true} />;
     }
 
     return <Page />;
 }
+
+    
