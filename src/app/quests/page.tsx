@@ -12,7 +12,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { ref, onValue, get } from 'firebase/database';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import type { Character, GameConfig } from '@/lib/types';
+import type { Character, GameConfig, UserProgress } from '@/lib/types';
+import type { User } from '@/hooks/use-auth';
 
 function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T>();
@@ -112,11 +113,8 @@ const questPositions = [
 ];
 
 
-function QuestPageContent() {
+function QuestPageContent({ user }: { user: User | null }) {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
   const [unlockedStages, setUnlockedStages] = useState(0);
   const [character, setCharacter] = useState<Character>('female');
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
@@ -161,7 +159,6 @@ function QuestPageContent() {
             setLoading(false);
           });
         } else {
-            // For dev mode or if user is somehow null after auth check
             setUnlockedStages(0);
             setLoading(false);
         }
@@ -171,19 +168,9 @@ function QuestPageContent() {
       }
     };
     
-    if (isDevelopment) {
-        fetchConfigAndProgress(null);
-        return;
-    }
+    fetchConfigAndProgress(user);
 
-    if (!authLoading) {
-      if (user) {
-        fetchConfigAndProgress(user);
-      } else {
-        router.replace('/');
-      }
-    }
-  }, [user, authLoading, router, isDevelopment]);
+  }, [user]);
   
    useEffect(() => {
     if (typeof prevUnlockedStages !== 'undefined' && unlockedStages > prevUnlockedStages) {
@@ -226,14 +213,6 @@ function QuestPageContent() {
 
 
   if (loading) {
-    return (
-        <div className="flex h-screen items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
-  }
-
-  if (!isDevelopment && !user) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -371,10 +350,38 @@ function QuestPageContent() {
   );
 }
 
+function Page() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  if (authLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    router.replace('/');
+    return (
+      <div className="flex h-screen items-center justify-center">
+         <p>로그인이 필요합니다. 메인 페이지로 이동합니다.</p>
+      </div>
+    );
+  }
+  
+  return <QuestPageContent user={user} />;
+}
+
 export default function QuestsPage() {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading your adventure...</div>}>
-      <QuestPageContent />
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+       {isDevelopment ? <QuestPageContent user={null} /> : <Page />}
     </Suspense>
   );
 }
+
+    

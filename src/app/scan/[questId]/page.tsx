@@ -14,14 +14,14 @@ import { ArrowLeft, VideoOff, Loader2 } from 'lucide-react';
 import jsQR from 'jsqr';
 import { Input } from '@/components/ui/input';
 import type { GameConfig } from '@/lib/types';
+import type { User } from '@/hooks/use-auth';
 
-export default function ScanPage() {
+function ScanPageContent({ user }: { user: User | null }) {
   const router = useRouter();
   const params = useParams();
   const questIndex = parseInt(typeof params.questId === 'string' ? params.questId : '-1', 10);
 
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
   
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
@@ -148,11 +148,10 @@ export default function ScanPage() {
 
   useEffect(() => {
     if (isDevelopment) {
-      setHasCameraPermission(true); // Assume permission in dev
-      setIsScanning(false); // Don't start scanning automatically in dev
+      setHasCameraPermission(true); 
+      setIsScanning(false);
       return;
     }
-    if (authLoading) return;
 
     let stream: MediaStream | null = null;
     const getCameraPermission = async () => {
@@ -174,10 +173,6 @@ export default function ScanPage() {
       }
     };
 
-    if (!user) {
-        router.replace('/');
-        return;
-    }
     getCameraPermission();
 
     return () => {
@@ -185,7 +180,7 @@ export default function ScanPage() {
       setIsScanning(false);
       if (stream) stream.getTracks().forEach(track => track.stop());
     };
-  }, [isDevelopment, toast, user, router, authLoading]);
+  }, [isDevelopment, toast]);
 
   useEffect(() => {
     if (isScanning && hasCameraPermission && !isDevelopment) {
@@ -304,3 +299,36 @@ export default function ScanPage() {
     </div>
   );
 }
+
+
+function Page() {
+    const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
+
+    if (authLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (!user) {
+        router.replace('/');
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <p>로그인이 필요합니다. 메인 페이지로 이동합니다.</p>
+            </div>
+        );
+    }
+    
+    return <ScanPageContent user={user} />;
+}
+
+export default function ScanPage() {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    return isDevelopment ? <ScanPageContent user={null} /> : <Page />;
+}
+
+    

@@ -52,7 +52,7 @@ function CouponCard({ isDisabled, expiryDate, config }: { isDisabled: boolean, e
   );
 }
 
-export default function RewardsPage() {
+function RewardsPageContent({ user }: { user: User | null }) {
   const [couponDisabled, setCouponDisabled] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
@@ -60,16 +60,9 @@ export default function RewardsPage() {
   const [pageLoading, setPageLoading] = useState(true);
 
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const isDevelopment = process.env.NODE_ENV === 'development';
   
   const checkGameCompletion = useCallback(async (currentUser: User | null, config: GameConfig) => {
-    if (isDevelopment) {
-        setPageLoading(false);
-        return;
-    }
-    
     if (!currentUser) {
        router.replace('/');
        return;
@@ -93,7 +86,7 @@ export default function RewardsPage() {
     }
     
     setPageLoading(false);
-  }, [router, toast, isDevelopment]);
+  }, [router, toast]);
 
   useEffect(() => {
     const today = new Date();
@@ -108,31 +101,29 @@ export default function RewardsPage() {
         if (snapshot.exists()) {
           const config = snapshot.val();
           setGameConfig(config);
-
-          if (isDevelopment) {
-              await checkGameCompletion(null, config);
-          } else if (!authLoading) {
-              await checkGameCompletion(user, config);
+          
+          if (user) {
+            await checkGameCompletion(user, config);
+          } else {
+            setPageLoading(false); // Dev mode
           }
         } else {
            toast({ title: '게임 설정을 불러오지 못했습니다.', variant: 'destructive'});
-           if (isDevelopment) setPageLoading(false);
-           else router.replace('/');
+           setPageLoading(false);
         }
       } catch (error) {
         console.error(error);
         toast({ title: '오류가 발생했습니다.', variant: 'destructive'});
-        if (isDevelopment) setPageLoading(false);
-        else router.replace('/');
+        setPageLoading(false);
       }
     };
     
     fetchGameConfig();
-  }, [user, authLoading, checkGameCompletion, isDevelopment, router, toast]);
+  }, [user, checkGameCompletion, toast]);
 
 
   const handleAdminValidate = async () => {
-    if (!user && !isDevelopment) {
+    if (!user) {
         toast({ title: '로그인이 필요합니다.', variant: 'destructive' });
         return;
     }
@@ -140,10 +131,8 @@ export default function RewardsPage() {
     if (adminCode === gameConfig?.adminCode) {
       setCouponDisabled(true);
       
-      if(user) {
-          const progressRef = ref(db, `userProgress/${user.uid}`);
-          await update(progressRef, { couponUsedTimestamp: new Date().getTime() });
-      }
+      const progressRef = ref(db, `userProgress/${user.uid}`);
+      await update(progressRef, { couponUsedTimestamp: new Date().getTime() });
 
       toast({
         title: '쿠폰 사용 완료',
@@ -196,3 +185,35 @@ export default function RewardsPage() {
       </div>
   );
 }
+
+function Page() {
+    const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
+
+    if (authLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (!user) {
+        router.replace('/');
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <p>로그인이 필요합니다. 메인 페이지로 이동합니다.</p>
+            </div>
+        );
+    }
+    
+    return <RewardsPageContent user={user} />;
+}
+
+export default function RewardsPage() {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    return isDevelopment ? <RewardsPageContent user={null} /> : <Page />;
+}
+
+    
