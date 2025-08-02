@@ -35,6 +35,7 @@ function ScanPageContent({ user }: { user: User | null }) {
 
   useEffect(() => {
      const fetchGameConfig = async () => {
+      setPageLoading(true);
       try {
         const configRef = ref(db, 'config');
         const snapshot = await get(configRef);
@@ -47,8 +48,21 @@ function ScanPageContent({ user }: { user: User | null }) {
         setPageLoading(false);
       }
     };
-    fetchGameConfig();
-  }, []);
+    if (!isDevelopment) {
+      fetchGameConfig();
+    } else {
+        const devConfig = {
+          numberOfStages: 6,
+          quests: Array(6).fill(0).map((_, i) => ({description: `개발용 퀘스트 ${i+1}`, qrCode: `DEV_QR_${i+1}`})),
+          couponTitle: '개발용 쿠폰',
+          couponSubtitle: '개발을 완료해주셔서 감사합니다!',
+          adminCode: '0000',
+          gameStartCode: 'START'
+      };
+      setGameConfig(devConfig);
+      setPageLoading(false);
+    }
+  }, [isDevelopment]);
 
   const handleValidate = useCallback(async (scannedCode: string) => {
     if (!gameConfig || questIndex < 0) return;
@@ -105,6 +119,8 @@ function ScanPageContent({ user }: { user: User | null }) {
         }
       } else if (isDevelopment) {
             toast({ title: '성공 (개발 모드)', description: '퀘스트를 완료했습니다!' });
+            const devProgressRef = ref(db, `userProgress/dev-user`);
+            update(devProgressRef, { unlockedStages: questIndex + 1 });
             router.push('/quests');
       }
     } else {
@@ -190,7 +206,7 @@ function ScanPageContent({ user }: { user: User | null }) {
     };
   }, [isScanning, hasCameraPermission, isDevelopment, tick]);
 
-  if (pageLoading && !isDevelopment) {
+  if (pageLoading || !gameConfig) {
     return (
         <div className="flex h-screen items-center justify-center bg-black">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -198,7 +214,7 @@ function ScanPageContent({ user }: { user: User | null }) {
     );
   }
   
-  const quest = gameConfig?.quests[questIndex];
+  const quest = gameConfig.quests[questIndex];
   if (!quest) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
