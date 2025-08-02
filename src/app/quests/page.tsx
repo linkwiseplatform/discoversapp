@@ -382,10 +382,8 @@ export default function QuestsPage() {
     const isDevelopment = process.env.NODE_ENV === 'development';
     
     if (isDevelopment) {
-      // In dev mode, render the content directly without auth
       return <QuestPageContent user={null} />;
     }
     
-    // In production, use the Page component which handles auth
     return <Page />;
 }
