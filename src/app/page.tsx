@@ -97,7 +97,7 @@ export default function Home() {
     setStartCode(value);
     if (!gameConfig) return;
 
-    if (process.env.NODE_ENV === 'development' || value.trim() === gameConfig.gameStartCode) {
+    if (process.env.NODE_ENV === 'development' || value.trim().toUpperCase() === gameConfig.gameStartCode.toUpperCase()) {
       setShowLogin(true);
     } else {
       setShowLogin(false);
@@ -106,7 +106,7 @@ export default function Home() {
 
   const handleStartCodeSubmit = () => {
     if (!gameConfig) return;
-    if (startCode.trim() !== gameConfig.gameStartCode) {
+    if (startCode.trim().toUpperCase() !== gameConfig.gameStartCode.toUpperCase()) {
          toast({
             title: '코드 오류',
             description: '시작 코드가 올바르지 않습니다.',
