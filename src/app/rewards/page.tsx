@@ -46,7 +46,7 @@ function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: number }) {
   }, [expiryTimestamp]);
 
   return (
-    <div className="my-4 bg-background rounded-md p-3">
+    <div className="my-4 bg-background/50 rounded-md p-3">
       <p className="text-sm text-muted-foreground">남은 시간</p>
       <p className="font-mono text-3xl tracking-widest">
         {timeLeft.hours}:{timeLeft.minutes}:{timeLeft.seconds}
@@ -56,22 +56,39 @@ function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: number }) {
 }
 
 function CouponCard({ isDisabled, expiryDate, expiryTimestamp, config }: { isDisabled: boolean, expiryDate: string, expiryTimestamp: number, config: GameConfig | null }) {
+  const dayColors = [
+    { bg: 'bg-purple-200/50', border: 'border-purple-300', text: 'text-purple-800', scissors: 'text-purple-600' }, // Sunday
+    { bg: 'bg-red-200/50', border: 'border-red-300', text: 'text-red-800', scissors: 'text-red-600' }, // Monday
+    { bg: 'bg-orange-200/50', border: 'border-orange-300', text: 'text-orange-800', scissors: 'text-orange-600' }, // Tuesday
+    { bg: 'bg-yellow-200/50', border: 'border-yellow-300', text: 'text-yellow-800', scissors: 'text-yellow-600' }, // Wednesday
+    { bg: 'bg-green-200/50', border: 'border-green-300', text: 'text-green-800', scissors: 'text-green-600' }, // Thursday
+    { bg: 'bg-blue-200/50', border: 'border-blue-300', text: 'text-blue-800', scissors: 'text-blue-600' }, // Friday
+    { bg: 'bg-indigo-200/50', border: 'border-indigo-300', text: 'text-indigo-800', scissors: 'text-indigo-600' }, // Saturday
+  ];
+
+  const [currentColor, setCurrentColor] = useState(dayColors[new Date().getDay()]);
+
+  useEffect(() => {
+    const dayIndex = new Date().getDay();
+    setCurrentColor(dayColors[dayIndex]);
+  }, []);
+
   if (!config) return <Skeleton className="h-60 w-full max-w-md mx-auto" />;
 
   return (
     <div className={cn(
-      "bg-accent/20 border-2 border-dashed border-accent p-4 rounded-lg shadow-lg max-w-md mx-auto relative transition-all duration-300",
-      isDisabled && "bg-muted border-muted-foreground/50 opacity-60"
+      "border-2 border-dashed p-4 rounded-lg shadow-lg max-w-md mx-auto relative transition-all duration-300",
+      isDisabled ? "bg-muted border-muted-foreground/50 opacity-60" : `${currentColor.bg} ${currentColor.border} ${currentColor.text}`
     )}>
-      <div className="absolute -top-4 -left-4 bg-background p-1 rounded-full"><Scissors className="h-6 w-6 text-accent -rotate-90" /></div>
-      <div className="absolute -top-4 -right-4 bg-background p-1 rounded-full"><Scissors className="h-6 w-6 text-accent rotate-90" /></div>
-      <div className="absolute -bottom-4 -left-4 bg-background p-1 rounded-full"><Scissors className="h-6 w-6 text-accent -rotate-180" /></div>
-      <div className="absolute -bottom-4 -right-4 bg-background p-1 rounded-full"><Scissors className="h-6 w-6 text-accent" /></div>
+      <div className="absolute -top-4 -left-4 bg-background p-1 rounded-full"><Scissors className={cn("h-6 w-6 -rotate-90", isDisabled ? "text-muted-foreground" : currentColor.scissors)} /></div>
+      <div className="absolute -top-4 -right-4 bg-background p-1 rounded-full"><Scissors className={cn("h-6 w-6 rotate-90", isDisabled ? "text-muted-foreground" : currentColor.scissors)} /></div>
+      <div className="absolute -bottom-4 -left-4 bg-background p-1 rounded-full"><Scissors className={cn("h-6 w-6 -rotate-180", isDisabled ? "text-muted-foreground" : currentColor.scissors)} /></div>
+      <div className="absolute -bottom-4 -right-4 bg-background p-1 rounded-full"><Scissors className={cn("h-6 w-6", isDisabled ? "text-muted-foreground" : currentColor.scissors)} /></div>
       
       <div className="text-center">
-        <Ticket className="h-12 w-12 mx-auto text-primary mb-2" />
-        <h3 className="font-headline text-xl text-primary">{config.couponTitle}</h3>
-        <p className="text-muted-foreground text-sm">{config.couponSubtitle}</p>
+        <Ticket className="h-12 w-12 mx-auto mb-2" />
+        <h3 className="font-headline text-xl">{config.couponTitle}</h3>
+        <p className="text-current/80 text-sm">{config.couponSubtitle}</p>
 
         <CountdownTimer expiryTimestamp={expiryTimestamp} />
 
