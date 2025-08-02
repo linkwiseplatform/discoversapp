@@ -354,3 +354,5 @@ export default function ScanPage() {
     
     return <Page />;
 }
+
+    
