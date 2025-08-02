@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -114,7 +114,6 @@ const questPositions = [
 
 
 function QuestPageContent({ user }: { user: User | null }) {
-  const router = useRouter();
   const [unlockedStages, setUnlockedStages] = useState(0);
   const [character, setCharacter] = useState<Character>('female');
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
@@ -122,6 +121,8 @@ function QuestPageContent({ user }: { user: User | null }) {
 
   const prevUnlockedStages = usePrevious(unlockedStages);
   const [showConfettiAt, setShowConfettiAt] = useState<{ top: string, left: string } | null>(null);
+
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   const totalStages = gameConfig?.numberOfStages ?? 0;
 
@@ -132,7 +133,7 @@ function QuestPageContent({ user }: { user: User | null }) {
   }, []);
 
   useEffect(() => {
-    const fetchConfigAndProgress = async (currentUser: typeof user) => {
+    const fetchConfigAndProgress = async () => {
       setLoading(true);
       try {
         const configRef = ref(db, 'config');
@@ -150,25 +151,24 @@ function QuestPageContent({ user }: { user: User | null }) {
             });
         }
 
-        if (currentUser) {
-          const progressRef = ref(db, `userProgress/${currentUser.uid}`);
+        if (user) {
+          const progressRef = ref(db, `userProgress/${user.uid}`);
           onValue(progressRef, (snapshot) => {
             const data = snapshot.val();
             const stages = data?.unlockedStages ?? 0;
             setUnlockedStages(stages);
-            setLoading(false);
           });
         } else {
             setUnlockedStages(0);
-            setLoading(false);
         }
       } catch (error) {
         console.error("Failed to fetch game config:", error);
+      } finally {
         setLoading(false);
       }
     };
     
-    fetchConfigAndProgress(user);
+    fetchConfigAndProgress();
 
   }, [user]);
   
@@ -377,11 +377,7 @@ function Page() {
 export default function QuestsPage() {
   const isDevelopment = process.env.NODE_ENV === 'development';
   
-  return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-       {isDevelopment ? <QuestPageContent user={null} /> : <Page />}
-    </Suspense>
-  );
+  return isDevelopment ? <QuestPageContent user={null} /> : <Page />;
 }
 
     

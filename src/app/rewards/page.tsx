@@ -85,7 +85,6 @@ function RewardsPageContent({ user }: { user: User | null }) {
         setCouponDisabled(true);
     }
     
-    setPageLoading(false);
   }, [router, toast]);
 
   useEffect(() => {
@@ -104,16 +103,14 @@ function RewardsPageContent({ user }: { user: User | null }) {
           
           if (user) {
             await checkGameCompletion(user, config);
-          } else {
-            setPageLoading(false); // Dev mode
           }
         } else {
            toast({ title: '게임 설정을 불러오지 못했습니다.', variant: 'destructive'});
-           setPageLoading(false);
         }
       } catch (error) {
         console.error(error);
         toast({ title: '오류가 발생했습니다.', variant: 'destructive'});
+      } finally {
         setPageLoading(false);
       }
     };
@@ -124,7 +121,17 @@ function RewardsPageContent({ user }: { user: User | null }) {
 
   const handleAdminValidate = async () => {
     if (!user) {
-        toast({ title: '로그인이 필요합니다.', variant: 'destructive' });
+        if (process.env.NODE_ENV === 'development') {
+             if (adminCode === gameConfig?.adminCode) {
+                setCouponDisabled(true);
+                toast({ title: '성공 (개발 모드)', description: '쿠폰이 사용 처리되었습니다.' });
+             } else {
+                toast({ title: '잘못된 관리자 코드입니다.', variant: 'destructive' });
+             }
+             setAdminCode('');
+        } else {
+            toast({ title: '로그인이 필요합니다.', variant: 'destructive' });
+        }
         return;
     }
 
