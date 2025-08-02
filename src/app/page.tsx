@@ -142,7 +142,7 @@ export default function Home() {
   return (
     <div className="relative min-h-screen w-full">
       <Image
-        src="https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fmainbg.png?alt=media&token=18968944-a82f-48f8-883a-33753556d07d"
+        src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/mainbg.jpg?alt=media&token=95d1f889-6d09-4342-b8ee-9e3c70cb522e"
         alt="모험을 암시하는 활기찬 일러스트 스타일의 숲 배경"
         data-ai-hint="storybook forest"
         fill
