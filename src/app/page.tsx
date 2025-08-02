@@ -59,7 +59,7 @@ export default function Home() {
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { user, loginWithGoogle, loading: authLoading } = useAuth();
+  const { user, login, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function Home() {
   };
 
   const handleLogin = async () => {
-    const loggedInUser = await loginWithGoogle();
+    const loggedInUser = await login();
     if (loggedInUser) {
         const userProgressRef = ref(db, `userProgress/${loggedInUser.uid}`);
         const userName = loggedInUser.displayName || `익명_${loggedInUser.uid.substring(0, 5)}`;

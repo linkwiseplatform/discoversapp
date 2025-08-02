@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { auth, googleProvider, db } from '@/lib/firebase';
-import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged, signInAnonymously, signOut, User } from 'firebase/auth';
 import { ref, get } from 'firebase/database';
 import type { Admin } from '@/lib/types';
 
@@ -45,12 +45,12 @@ export function useAuth() {
     return () => unsubscribe();
   }, []);
 
-  const loginWithGoogle = useCallback(async () => {
+  const login = useCallback(async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      const result = await signInAnonymously(auth);
       return result.user;
     } catch (error) {
-      console.error("Google sign-in failed:", error);
+      console.error("Anonymous sign-in failed:", error);
       return null;
     }
   }, []);
@@ -65,5 +65,5 @@ export function useAuth() {
     }
   }, []);
 
-  return { user, loading, isAdmin, isAdminLoading, loginWithGoogle, logout };
+  return { user, loading, isAdmin, isAdminLoading, login, logout };
 }

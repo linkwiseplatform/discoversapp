@@ -392,7 +392,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
 }
 
 function Page() {
-  const { user, loading, loginWithGoogle, isAdmin, isAdminLoading } = useAuth();
+  const { user, loading, login, isAdmin, isAdminLoading } = useAuth();
   const router = useRouter();
 
   if (loading || isAdminLoading) {
@@ -404,7 +404,7 @@ function Page() {
   }
   
   if (!user) {
-    return <AdminLoginPage onLogin={loginWithGoogle} />;
+    return <AdminLoginPage onLogin={login} />;
   }
 
   if (!isAdmin) {
