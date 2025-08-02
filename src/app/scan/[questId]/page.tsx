@@ -250,7 +250,7 @@ function ScanPageContent({ user }: { user: User | null }) {
         <p className="mb-6 [text-shadow:1px_1px_2px_rgba(0,0,0,0.7)] text-lg">
           {quest.description}
         </p>
-        <div className="relative w-full max-w-sm aspect-square mx-auto flex items-center justify-center rounded-2xl overflow-hidden border-4 border-dashed border-accent/50 bg-black">
+        <div className="relative w-full max-w-[18rem] aspect-square mx-auto flex items-center justify-center rounded-2xl overflow-hidden border-4 border-dashed border-accent/50 bg-black">
           <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
           <canvas ref={canvasRef} style={{ display: "none" }} />
           
