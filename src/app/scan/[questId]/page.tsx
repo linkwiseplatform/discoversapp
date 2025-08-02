@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, User } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { ref, set, get } from 'firebase/database';
+import { ref, set, get, update } from 'firebase/database';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
 import { ArrowLeft, VideoOff, Loader2 } from 'lucide-react';
@@ -65,7 +65,7 @@ function ScanPageContent({ user }: { user: User | null }) {
   }, [isDevelopment]);
 
   const handleValidate = useCallback(async (scannedCode: string) => {
-    if (!gameConfig || questIndex < 0) return;
+    if (!gameConfig || questIndex < 0 || !scannedCode) return;
     
     setIsScanning(false);
     if (requestRef.current) {
@@ -80,9 +80,9 @@ function ScanPageContent({ user }: { user: User | null }) {
     }
 
     if (scannedCode.trim().toUpperCase() === quest.qrCode.toUpperCase()) {
-      if(user) {
-        try {
-          const progressRef = ref(db, `userProgress/${user.uid}`);
+      const updateUserProgress = async (uid: string) => {
+         try {
+          const progressRef = ref(db, `userProgress/${uid}`);
           const snapshot = await get(progressRef);
           const currentProgress = snapshot.val() ?? { unlockedStages: 0 };
           const currentStages = currentProgress.unlockedStages;
@@ -117,6 +117,10 @@ function ScanPageContent({ user }: { user: User | null }) {
             });
             setTimeout(() => setIsScanning(true), 2000);
         }
+      }
+      
+      if(user) {
+        await updateUserProgress(user.uid);
       } else if (isDevelopment) {
             toast({ title: '성공 (개발 모드)', description: '퀘스트를 완료했습니다!' });
             const devProgressRef = ref(db, `userProgress/dev-user`);
@@ -227,7 +231,7 @@ function ScanPageContent({ user }: { user: User | null }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 relative text-white bg-black">
       <Image
-        src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/qrbg.jpg?alt=media&token=16a82741-6e3e-41a6-8f08-b952b7579f64"
+        src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/qrbg.jpg?alt=media&token=9250ea32-db6b-49da-83b1-ac2f8ab2eace"
         alt="QR Scan Background"
         fill
         className="object-cover -z-10 opacity-70"
@@ -243,15 +247,10 @@ function ScanPageContent({ user }: { user: User | null }) {
       </Button>
 
       <div className="w-full max-w-md text-center">
-        <div className="flex justify-center items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold [text-shadow:2px_2px_4px_rgba(0,0,0,0.7)]">
-            Quest {questIndex + 1}
-            </h1>
-        </div>
-        <p className="mb-6 [text-shadow:1px_1px_2px_rgba(0,0,0,0.7)]">
+        <p className="mb-6 [text-shadow:1px_1px_2px_rgba(0,0,0,0.7)] text-lg">
           {quest.description}
         </p>
-        <div className="relative w-4/5 max-w-sm aspect-square mx-auto flex items-center justify-center rounded-2xl overflow-hidden border-4 border-dashed border-accent/50 bg-black">
+        <div className="relative w-full max-w-sm aspect-square mx-auto flex items-center justify-center rounded-2xl overflow-hidden border-4 border-dashed border-accent/50 bg-black">
           <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
           <canvas ref={canvasRef} style={{ display: "none" }} />
           
@@ -318,7 +317,7 @@ function Page() {
         );
     }
 
-    if (!user) {
+    if (!user && process.env.NODE_ENV !== 'development') {
         router.replace('/');
         return (
             <div className="flex h-screen items-center justify-center bg-black">
