@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase';
 import { ref, get, update } from 'firebase/database';
 import type { GameConfig, UserProgress } from '@/lib/types';
-import { isToday, startOfToday } from 'date-fns';
+import { isToday } from 'date-fns';
 
 function CouponCard({ isDisabled, expiryDate, config }: { isDisabled: boolean, expiryDate: string, config: GameConfig | null }) {
   if (!config) return <Skeleton className="h-80 w-full max-w-md mx-auto" />;
@@ -62,8 +62,14 @@ export default function RewardsPage() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const isDevelopment = process.env.NODE_ENV === 'development';
   
-  const checkGameCompletion = useCallback(async (user: User, config: GameConfig) => {
+  const checkGameCompletion = useCallback(async (user: User | null, config: GameConfig) => {
+    if (!user) { // For dev mode without user
+        setPageLoading(false);
+        return;
+    }
+
     const progressRef = ref(db, `userProgress/${user.uid}`);
     const snapshot = await get(progressRef);
     if (!snapshot.exists()) {
@@ -77,7 +83,6 @@ export default function RewardsPage() {
       return;
     }
     
-    // Check if coupon was used today
     if(progress.couponUsedTimestamp && isToday(new Date(progress.couponUsedTimestamp))) {
         setCouponDisabled(true);
     }
@@ -99,33 +104,29 @@ export default function RewardsPage() {
           setGameConfig(config);
 
           if (!authLoading) {
-            if (user) {
-              await checkGameCompletion(user, config);
-            } else if (process.env.NODE_ENV === 'development') {
-              setPageLoading(false); // Allow access in dev
-            } else {
-              router.replace('/');
-            }
+            await checkGameCompletion(user, config);
+          } else if (isDevelopment && authLoading) {
+            await checkGameCompletion(null, config);
           }
         } else {
            toast({ title: '게임 설정을 불러오지 못했습니다.', variant: 'destructive'});
-           router.replace('/');
+           if (!isDevelopment) router.replace('/');
+           else setPageLoading(false);
         }
       } catch (error) {
         console.error(error);
         toast({ title: '오류가 발생했습니다.', variant: 'destructive'});
-        router.replace('/');
+        if (!isDevelopment) router.replace('/');
+        else setPageLoading(false);
       }
     };
     
-    if (!authLoading) {
-        fetchGameConfig();
-    }
-  }, [user, authLoading, router, toast, checkGameCompletion]);
+    fetchGameConfig();
+  }, [user, authLoading, router, toast, checkGameCompletion, isDevelopment]);
 
 
   const handleAdminValidate = async () => {
-    if (!user && process.env.NODE_ENV !== 'development') {
+    if (!user && !isDevelopment) {
         toast({ title: '로그인이 필요합니다.', variant: 'destructive' });
         return;
     }
@@ -151,7 +152,7 @@ export default function RewardsPage() {
     }
   };
   
-  if (pageLoading || authLoading) {
+  if (pageLoading || (authLoading && !isDevelopment)) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -189,3 +190,5 @@ export default function RewardsPage() {
       </div>
   );
 }
+
+    

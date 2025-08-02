@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Trash2, UserPlus, Pencil, Download, Loader2, Users } from 'lucide-react';
+import { Trash2, UserPlus, Download, Loader2, Users } from 'lucide-react';
 
 const DEFAULT_QUEST = { description: '', qrCode: '' };
 
@@ -381,6 +381,11 @@ export default function AdminPage() {
   const { user, loading, loginWithGoogle, isAdmin, isAdminLoading } = useAuth();
   const router = useRouter();
 
+  if (process.env.NODE_ENV === 'development') {
+    const devUser = { uid: 'dev-user', displayName: '개발자' } as User;
+    return <AdminDashboard currentUser={devUser} />;
+  }
+
   if (loading || isAdminLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -389,13 +394,6 @@ export default function AdminPage() {
     );
   }
   
-  // In development, bypass login and admin check
-  if (process.env.NODE_ENV === 'development') {
-    const devUser = user || { uid: 'dev-user', displayName: '개발자' } as User;
-    return <AdminDashboard currentUser={devUser} />;
-  }
-  
-  // In production, require login and admin status
   if (!user) {
     return <AdminLoginPage onLogin={loginWithGoogle} />;
   }

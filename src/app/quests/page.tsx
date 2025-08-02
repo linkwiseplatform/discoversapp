@@ -1,18 +1,16 @@
 
 'use client';
 
-import { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, Suspense, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { QrCode, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { ref, onValue, set, get } from 'firebase/database';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ref, onValue, get } from 'firebase/database';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { Character, GameConfig } from '@/lib/types';
 
@@ -117,6 +115,7 @@ const questPositions = [
 function QuestPageContent() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   const [unlockedStages, setUnlockedStages] = useState(0);
   const [character, setCharacter] = useState<Character>('female');
@@ -135,12 +134,6 @@ function QuestPageContent() {
   }, []);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user && process.env.NODE_ENV !== 'development') {
-      router.replace('/');
-      return;
-    }
-
     const fetchConfigAndProgress = async () => {
       setLoading(true);
       try {
@@ -165,10 +158,9 @@ function QuestPageContent() {
             const data = snapshot.val();
             const stages = data?.unlockedStages ?? 0;
             setUnlockedStages(stages);
-            setLoading(false); 
+            setLoading(false);
           });
-        } else if (process.env.NODE_ENV === 'development') {
-            setUnlockedStages(0); 
+        } else {
             setLoading(false);
         }
       } catch (error) {
@@ -177,9 +169,12 @@ function QuestPageContent() {
       }
     };
     
-    fetchConfigAndProgress();
-
-  }, [user, authLoading, router]);
+    if (!authLoading) {
+      fetchConfigAndProgress();
+    } else if (isDevelopment && authLoading) {
+      fetchConfigAndProgress();
+    }
+  }, [user, authLoading, router, isDevelopment]);
   
    useEffect(() => {
     if (typeof prevUnlockedStages !== 'undefined' && unlockedStages > prevUnlockedStages) {
@@ -221,7 +216,16 @@ function QuestPageContent() {
   const boardImageUrl = totalStages > 0 ? `https://firebasestorage.googleapis.com/v0/b/discovers-1logj.firebasestorage.app/o/Dino%20Hunter%2Fstage-${totalStages}.png?alt=media` : '';
 
 
-  if (loading || authLoading || !gameConfig) {
+  if (loading || (authLoading && !isDevelopment) || !gameConfig) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
+
+  if (!user && !isDevelopment) {
+    router.replace('/');
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -366,3 +370,5 @@ export default function QuestsPage() {
     </Suspense>
   );
 }
+
+    

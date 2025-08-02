@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { ref, set, get, update } from 'firebase/database';
+import { ref, set, get } from 'firebase/database';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Image from 'next/image';
 import { ArrowLeft, VideoOff, Loader2 } from 'lucide-react';
@@ -27,6 +27,7 @@ export default function ScanPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [devCode, setDevCode] = useState('');
+  const [pageLoading, setPageLoading] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,10 +37,16 @@ export default function ScanPage() {
 
   useEffect(() => {
      const fetchGameConfig = async () => {
-      const configRef = ref(db, 'config');
-      const snapshot = await get(configRef);
-      if (snapshot.exists()) {
-        setGameConfig(snapshot.val());
+      try {
+        const configRef = ref(db, 'config');
+        const snapshot = await get(configRef);
+        if (snapshot.exists()) {
+          setGameConfig(snapshot.val());
+        }
+      } catch (e) {
+        console.error("Failed to fetch game config", e)
+      } finally {
+        setPageLoading(false);
       }
     };
     fetchGameConfig();
@@ -139,8 +146,8 @@ export default function ScanPage() {
   }, [handleValidate, isScanning]);
 
   useEffect(() => {
-    if (isDevelopment) {
-      setHasCameraPermission(true);
+    if (isDevelopment || authLoading) {
+      if (isDevelopment) setHasCameraPermission(true);
       return;
     }
 
@@ -164,7 +171,7 @@ export default function ScanPage() {
       }
     };
 
-    if (!user && !isDevelopment) {
+    if (!user) {
         router.replace('/');
         return;
     }
@@ -175,7 +182,7 @@ export default function ScanPage() {
       setIsScanning(false);
       if (stream) stream.getTracks().forEach(track => track.stop());
     };
-  }, [isDevelopment, toast, user, router]);
+  }, [isDevelopment, toast, user, router, authLoading]);
 
   useEffect(() => {
     if (isScanning && hasCameraPermission && !isDevelopment) {
@@ -188,12 +195,20 @@ export default function ScanPage() {
     };
   }, [isScanning, hasCameraPermission, isDevelopment, tick]);
 
-  if (authLoading || !gameConfig) {
+  if ((authLoading && !isDevelopment) || pageLoading) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
+  }
+
+  if (!gameConfig) {
+      return (
+           <div className="flex h-screen items-center justify-center">
+            <p>게임 설정을 불러오지 못했습니다.</p>
+        </div>
+      )
   }
   
   const quest = gameConfig.quests[questIndex];
@@ -286,3 +301,5 @@ export default function ScanPage() {
     </div>
   );
 }
+
+    
