@@ -157,7 +157,7 @@ export default function Home() {
         className="object-cover z-0"
         priority
       />
-      <div className="relative z-10 flex min-h-screen w-full items-center justify-center p-4">
+      <div className="relative z-10 flex min-h-screen w-full items-end justify-center p-4 pb-32">
         <Card className="w-full max-w-sm bg-transparent border-none shadow-none animate-in fade-in zoom-in-95 text-white">
           <CardHeader className="text-center">
              <div className="flex justify-center">
