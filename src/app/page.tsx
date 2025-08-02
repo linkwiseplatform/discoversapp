@@ -157,7 +157,7 @@ export default function Home() {
         className="object-cover z-0"
         priority
       />
-      <div className="absolute top-0 left-0 right-0 z-20 flex justify-center pt-16">
+      <div className="absolute top-0 left-0 right-0 z-20 flex justify-center pt-8">
         <h1 className="font-headline text-6xl text-[#ff8103] [text-shadow:-2px_-2px_0_#4f2b04,2px_-2px_0_#4f2b04,-2px_2px_0_#4f2b04,2px_2px_0_#4f2b04,4px_4px_8px_rgba(0,0,0,0.6)] text-center">
             공룡<br />어드벤처
         </h1>
