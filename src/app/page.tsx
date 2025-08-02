@@ -59,7 +59,7 @@ export default function Home() {
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { user, loginAnonymously, loading: authLoading } = useAuth();
+  const { user, loginWithGoogle, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function Home() {
   };
 
   const handleLogin = async () => {
-    const loggedInUser = await loginAnonymously();
+    const loggedInUser = await loginWithGoogle();
     if (loggedInUser) {
         const userProgressRef = ref(db, `userProgress/${loggedInUser.uid}`);
         const userName = loggedInUser.displayName || `익명_${loggedInUser.uid.substring(0, 5)}`;
@@ -133,7 +133,7 @@ export default function Home() {
     } else {
       toast({
         title: '로그인 실패',
-        description: '익명 로그인에 실패했습니다. 다시 시도해 주세요.',
+        description: '로그인에 실패했습니다. 다시 시도해 주세요.',
         variant: 'destructive',
       });
     }

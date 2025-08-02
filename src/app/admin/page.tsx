@@ -253,7 +253,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
         <CardContent className="space-y-4">
             <div className="flex gap-4">
                 <Input placeholder="새 관리자 이름" value={newAdminName} onChange={e => setNewAdminName(e.target.value)} />
-                <Input placeholder="새 관리자 카카오 고유ID" value={newAdminId} onChange={e => setNewAdminId(e.target.value)} />
+                <Input placeholder="새 관리자 고유ID" value={newAdminId} onChange={e => setNewAdminId(e.target.value)} />
                 <Button onClick={handleAddAdmin}><UserPlus className="mr-2"/>추가</Button>
             </div>
             <div>

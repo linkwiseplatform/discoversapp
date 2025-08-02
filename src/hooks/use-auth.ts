@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { auth, googleProvider, db } from '@/lib/firebase';
-import { onAuthStateChanged, signInWithPopup, signOut, User, signInAnonymously } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
 import { ref, get } from 'firebase/database';
 import type { Admin } from '@/lib/types';
 
@@ -45,16 +45,6 @@ export function useAuth() {
     return () => unsubscribe();
   }, []);
 
-  const loginAnonymously = useCallback(async () => {
-    try {
-      const userCredential = await signInAnonymously(auth);
-      return userCredential.user;
-    } catch (error) {
-      console.error("Anonymous sign-in failed:", error);
-      return null;
-    }
-  }, []);
-
   const loginWithGoogle = useCallback(async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -75,5 +65,5 @@ export function useAuth() {
     }
   }, []);
 
-  return { user, loading, isAdmin, isAdminLoading, loginAnonymously, loginWithGoogle, logout };
+  return { user, loading, isAdmin, isAdminLoading, loginWithGoogle, logout };
 }
