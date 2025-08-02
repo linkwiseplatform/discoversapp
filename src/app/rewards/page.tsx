@@ -22,8 +22,8 @@ const ConfettiPiece = ({ id }: { id: number }) => {
         '--angle-start': `${Math.random() * 360}deg`,
         '--angle-end': `${Math.random() * 360 + 360}deg`,
         '--x-start': `${Math.random() * 100}vw`,
-        '--y-start': `${Math.random() * 100}vh`,
-        '--duration': `${Math.random() * 3 + 2}s`,
+        '--y-start': `${Math.random() * -20}vh`,
+        '--duration': `${Math.random() * 3 + 4}s`,
         '--delay': `${Math.random() * 2}s`,
         backgroundColor: ['#E89C27', '#3F7242', '#FFD700', '#FFFFFF', '#fde047', '#f97316', '#4ade80'][Math.floor(Math.random() * 7)],
     } as React.CSSProperties;
