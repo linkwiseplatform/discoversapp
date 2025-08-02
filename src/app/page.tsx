@@ -14,6 +14,7 @@ import { db } from '@/lib/firebase';
 import { ref, get, set } from 'firebase/database';
 import type { GameConfig } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 const KakaoIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -59,7 +60,7 @@ export default function Home() {
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { user, login, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -114,31 +115,6 @@ export default function Home() {
     }
   };
 
-  const handleLogin = async () => {
-    const loggedInUser = await login();
-    if (loggedInUser) {
-        const userProgressRef = ref(db, `userProgress/${loggedInUser.uid}`);
-        const userName = loggedInUser.displayName || `익명_${loggedInUser.uid.substring(0, 5)}`;
-        
-        const snapshot = await get(userProgressRef);
-        if (!snapshot.exists()) {
-             await set(userProgressRef, { 
-                unlockedStages: 0,
-                lastPlayed: new Date().getTime(),
-                name: userName,
-                uid: loggedInUser.uid
-             });
-        }
-      // The useEffect hook will handle the redirect
-    } else {
-      toast({
-        title: '로그인 실패',
-        description: '로그인에 실패했습니다. 다시 시도해 주세요.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   if (isLoading) {
     return (
         <div className="flex h-screen items-center justify-center">
@@ -172,9 +148,11 @@ export default function Home() {
           </CardHeader>
           <CardContent className="text-center">
              {showLogin ? (
-                <Button onClick={handleLogin} className="w-full gap-2 h-12 text-lg">
+                <Button asChild className="w-full gap-2 h-12 text-lg">
+                  <Link href="/auth/kakao">
                     <KakaoIcon />
                     카카오 로그인으로 시작
+                  </Link>
                 </Button>
              ) : (
               <div className="space-y-4">

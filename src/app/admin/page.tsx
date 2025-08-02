@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { ref, get, set, remove, query, orderByChild, limitToLast, onValue } from 'firebase/database';
 import type { Admin, GameConfig, UserProgress } from '@/lib/types';
 import QRCode from 'qrcode';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +36,7 @@ const KakaoIcon = () => (
     </svg>
 );
 
-function AdminLoginPage({ onLogin }: { onLogin: () => void }) {
+function AdminLoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-sm">
@@ -46,9 +47,11 @@ function AdminLoginPage({ onLogin }: { onLogin: () => void }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={onLogin} className="w-full gap-2">
-            <KakaoIcon />
-            카카오 계정으로 로그인
+          <Button asChild className="w-full gap-2">
+            <Link href="/auth/kakao?admin=true">
+                <KakaoIcon />
+                카카오 계정으로 로그인
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -392,7 +395,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
 }
 
 function Page() {
-  const { user, loading, login, isAdmin, isAdminLoading } = useAuth();
+  const { user, loading, isAdmin, isAdminLoading } = useAuth();
   const router = useRouter();
 
   if (loading || isAdminLoading) {
@@ -404,7 +407,7 @@ function Page() {
   }
   
   if (!user) {
-    return <AdminLoginPage onLogin={login} />;
+    return <AdminLoginPage />;
   }
 
   if (!isAdmin) {

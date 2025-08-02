@@ -2,7 +2,7 @@
 'use client';
 
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
@@ -18,6 +18,5 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getDatabase(app);
-const googleProvider = new GoogleAuthProvider();
 
-export { app, auth, db, googleProvider };
+export { app, auth, db };
