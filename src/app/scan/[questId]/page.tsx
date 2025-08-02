@@ -229,7 +229,7 @@ function ScanPageContent({ user }: { user: User | null }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 relative text-white bg-black">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 relative text-white">
       <Image
         src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/qrbg.jpg?alt=media&token=9250ea32-db6b-49da-83b1-ac2f8ab2eace"
         alt="QR Scan Background"
@@ -354,5 +354,3 @@ export default function ScanPage() {
     
     return <Page />;
 }
-
-    
