@@ -229,7 +229,7 @@ function ScanPageContent({ user }: { user: User | null }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 relative text-white">
+    <div className="flex flex-col items-center min-h-screen p-4 relative text-white">
       <Image
         src="https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/qrbg.jpg?alt=media&token=9250ea32-db6b-49da-83b1-ac2f8ab2eace"
         alt="QR Scan Background"
@@ -246,7 +246,7 @@ function ScanPageContent({ user }: { user: User | null }) {
         <ArrowLeft className="w-6 h-6" />
       </Button>
 
-      <div className="w-full max-w-md text-center">
+      <div className="flex-grow flex flex-col justify-center w-full max-w-md text-center">
         <p className="mb-6 [text-shadow:1px_1px_2px_rgba(0,0,0,0.7)] text-lg">
           {quest.description}
         </p>
@@ -354,5 +354,3 @@ export default function ScanPage() {
     
     return <Page />;
 }
-
-    
