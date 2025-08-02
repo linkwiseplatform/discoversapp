@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, User } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,8 +12,9 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase';
-import { ref, get } from 'firebase/database';
-import type { GameConfig } from '@/lib/types';
+import { ref, get, update } from 'firebase/database';
+import type { GameConfig, UserProgress } from '@/lib/types';
+import { isToday, startOfToday } from 'date-fns';
 
 function CouponCard({ isDisabled, expiryDate, config }: { isDisabled: boolean, expiryDate: string, config: GameConfig | null }) {
   if (!config) return <Skeleton className="h-80 w-full max-w-md mx-auto" />;
@@ -42,7 +43,9 @@ function CouponCard({ isDisabled, expiryDate, config }: { isDisabled: boolean, e
           Expires: <span className="font-semibold">{expiryDate}</span>
         </p>
         {isDisabled && (
-          <p className="mt-4 font-bold text-destructive text-xl">COUPON USED</p>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+             <p className="text-6xl font-black text-white/80 transform -rotate-12 select-none opacity-90">USED</p>
+          </div>
         )}
       </div>
     </div>
@@ -54,50 +57,99 @@ export default function RewardsPage() {
   const [adminCode, setAdminCode] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user && process.env.NODE_ENV !== 'development') {
-      router.replace('/');
+  
+  const checkGameCompletion = useCallback(async (user: User, config: GameConfig) => {
+    const progressRef = ref(db, `userProgress/${user.uid}`);
+    const snapshot = await get(progressRef);
+    if (!snapshot.exists()) {
+       router.replace('/');
+       return;
     }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-     const fetchGameConfig = async () => {
-      const configRef = ref(db, 'config');
-      const snapshot = await get(configRef);
-      if (snapshot.exists()) {
-        setGameConfig(snapshot.val());
-      }
-    };
-    fetchGameConfig();
-  }, []);
-
+    const progress: UserProgress = snapshot.val();
+    if (progress.unlockedStages < config.numberOfStages) {
+      toast({ title: '아직 모든 퀘스트를 완료하지 않았습니다.', variant: 'destructive'});
+      router.replace('/quests');
+      return;
+    }
+    
+    // Check if coupon was used today
+    if(progress.couponUsedTimestamp && isToday(new Date(progress.couponUsedTimestamp))) {
+        setCouponDisabled(true);
+    }
+    
+    setPageLoading(false);
+  }, [router, toast]);
 
   useEffect(() => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
-    setExpiryDate(today.toLocaleString());
-  }, []);
+    setExpiryDate(today.toLocaleString('ko-KR'));
+    
+    const fetchGameConfig = async () => {
+      try {
+        const configRef = ref(db, 'config');
+        const snapshot = await get(configRef);
+        if (snapshot.exists()) {
+          const config = snapshot.val();
+          setGameConfig(config);
 
-  const handleAdminValidate = () => {
+          if (!authLoading) {
+            if (user) {
+              await checkGameCompletion(user, config);
+            } else if (process.env.NODE_ENV === 'development') {
+              setPageLoading(false); // Allow access in dev
+            } else {
+              router.replace('/');
+            }
+          }
+        } else {
+           toast({ title: '게임 설정을 불러오지 못했습니다.', variant: 'destructive'});
+           router.replace('/');
+        }
+      } catch (error) {
+        console.error(error);
+        toast({ title: '오류가 발생했습니다.', variant: 'destructive'});
+        router.replace('/');
+      }
+    };
+    
+    fetchGameConfig();
+  }, [user, authLoading, router, toast, checkGameCompletion]);
+
+
+  const handleAdminValidate = async () => {
+    if (!user && process.env.NODE_ENV !== 'development') {
+        toast({ title: '로그인이 필요합니다.', variant: 'destructive' });
+        return;
+    }
+
     if (adminCode === gameConfig?.adminCode) {
       setCouponDisabled(true);
+      
+      if(user) {
+          const progressRef = ref(db, `userProgress/${user.uid}`);
+          await update(progressRef, { couponUsedTimestamp: new Date().getTime() });
+      }
+
       toast({
-        title: 'Coupon Disabled',
-        description: 'The reward coupon has been marked as used.',
+        title: '쿠폰 사용 완료',
+        description: '보상 쿠폰이 사용 처리되었습니다.',
       });
     } else {
        toast({
-        title: 'Invalid Admin Code',
+        title: '잘못된 관리자 코드입니다.',
         variant: 'destructive',
       });
+      setAdminCode('');
     }
   };
   
-  if (loading || !gameConfig) {
+  if (pageLoading || authLoading) {
     return (
         <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -107,27 +159,28 @@ export default function RewardsPage() {
 
   return (
       <div className="container py-8 text-center">
-        <h1 className="font-headline text-4xl mb-2">You've Earned a Reward!</h1>
-        <p className="text-muted-foreground mb-8">Present this coupon to claim your prize.</p>
+        <h1 className="font-headline text-4xl mb-2">모든 퀘스트 완료!</h1>
+        <p className="text-muted-foreground mb-8">보상으로 쿠폰을 드립니다. 직원에게 이 화면을 보여주세요.</p>
         
         <CouponCard isDisabled={couponDisabled} expiryDate={expiryDate} config={gameConfig} />
         
         <Card className="max-w-md mx-auto mt-8">
           <CardHeader>
             <CardTitle className="font-headline flex items-center justify-center gap-2">
-              <ShieldCheck /> Admin Validation
+              <ShieldCheck /> 관리자 사용 확인
             </CardTitle>
-            <CardDescription>For staff use only. Enter code to redeem coupon.</CardDescription>
+            <CardDescription>직원용: 코드를 입력하여 쿠폰을 사용 처리하세요.</CardDescription>
           </CardHeader>
           <CardContent className="flex gap-2">
             <Input 
-              placeholder="Admin Code"
+              placeholder="관리자 코드"
+              type="password"
               value={adminCode}
               onChange={(e) => setAdminCode(e.target.value)}
               disabled={couponDisabled}
             />
             <Button onClick={handleAdminValidate} disabled={couponDisabled}>
-              Validate
+              사용 확인
             </Button>
           </CardContent>
         </Card>
