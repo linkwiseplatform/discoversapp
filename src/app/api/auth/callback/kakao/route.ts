@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { URLSearchParams } from 'url';
 
@@ -8,13 +8,33 @@ const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
 const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 
+const firebaseConfig = {
+  apiKey: "AIzaSyAF6_rVv7BXSKRv7VTsJaGbCemoOO7Ir3Q",
+  authDomain: "discoversapp.firebaseapp.com",
+  projectId: "discoversapp",
+  storageBucket: "discoversapp.firebasestorage.app",
+  messagingSenderId: "207214786584",
+  appId: "1:207214786584:web:a3f9687b3072c7fae06b6d",
+  databaseURL: "https://discoversapp-default-rtdb.firebaseio.com"
+};
+
+let adminApp: App;
 try {
     if (!getApps().length) {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
-        initializeApp({
+       if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
+         adminApp = initializeApp({
             credential: cert(serviceAccount),
-            databaseURL: "https://discoversapp-default-rtdb.firebaseio.com"
+            databaseURL: firebaseConfig.databaseURL,
         });
+       } else {
+         adminApp = initializeApp({
+            projectId: firebaseConfig.projectId,
+            databaseURL: firebaseConfig.databaseURL,
+        });
+       }
+    } else {
+        adminApp = getApp();
     }
 } catch (error: any) {
     console.error('Firebase Admin SDK initialization error', error);
@@ -69,7 +89,7 @@ export async function POST(req: NextRequest) {
         const displayName = userData.properties.nickname;
         const photoURL = userData.properties.profile_image;
 
-        const firebaseAuth = getAuth();
+        const firebaseAuth = getAuth(adminApp);
         
         // 3. Update or create user in Firebase Auth
         try {
