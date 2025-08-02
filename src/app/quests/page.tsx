@@ -27,11 +27,13 @@ const ConfettiPiece = ({ id }: { id: number }) => {
         '--angle-start': `${Math.random() * 360}deg`,
         '--angle-end': `${Math.random() * 360}deg`,
         '--distance': `${Math.random() * 40 + 50}px`,
+        '--duration': `${Math.random() * 0.4 + 0.6}s`,
         backgroundColor: ['#E89C27', '#3F7242', '#FFD700', '#FFFFFF'][Math.floor(Math.random() * 4)],
     } as React.CSSProperties;
 
-    return <div key={id} className="animate-burst w-2 h-2 rounded-full" style={style} />;
+    return <div key={id} className="animate-burst w-2 h-2 rounded-full absolute" style={style} />;
 };
+
 
 const StageClearAnimation = ({ position }: { position: { top: string, left: string } | null }) => {
     if (!position) return null;
@@ -92,7 +94,7 @@ const GameWonOverlay = () => {
             0% { transform: rotate(var(--angle-start)) translate(0); opacity: 1; }
             100% { transform: rotate(var(--angle-end)) translate(var(--distance)); opacity: 0; }
         }
-        .animate-burst { animation: burst 0.6s ease-out forwards; position: absolute; }
+        .animate-burst { animation: burst var(--duration) ease-out forwards; }
       `}</style>
     </div>
   );
@@ -105,16 +107,16 @@ const hunterStartPositions = {
 };
 
 const questPositions = [
-    { top: '0%', left: '50%' },      // 1번 퀘스트
-    { top: '10.5%', left: '50%' },   // 2번 퀘스트
-    { top: '21%', left: '50%' },     // 3번 퀘스트
-    { top: '31.5%', left: '50%' },   // 4번 퀘스트
-    { top: '42%', left: '50%' },     // 5번 퀘스트
-    { top: '52.5%', left: '50%' },   // 6번 퀘스트
-    { top: '63%', left: '50%' },     // 7번 퀘스트
-    { top: '73.5%', left: '50%' },   // 8번 퀘스트
-    { top: '84%', left: '50%' },     // 9번 퀘스트
-    { top: '94.5%', left: '50%' }    // 10번 퀘스트
+    { top: '-1%', left: '50%' },      // 1번 퀘스트
+    { top: '16%', left: '50%' },   // 2번 퀘스트
+    { top: '33%', left: '50%' },     // 3번 퀘스트
+    { top: '50%', left: '50%' },   // 4번 퀘스트
+    { top: '68%', left: '50%' },     // 5번 퀘스트
+    { top: '86%', left: '50%' },   // 6번 퀘스트
+    { top: '104%', left: '50%' },     // 7번 퀘스트
+    { top: '122%', left: '50%' },   // 8번 퀘스트
+    { top: '140%', left: '50%' },     // 9번 퀘스트
+    { top: '158%', left: '50%' }    // 10번 퀘스트
 ];
 
 const boardImageUrls: Record<number, string> = {
@@ -463,5 +465,3 @@ export default function QuestsPage() {
   
   return <Page />;
 }
-
-    
