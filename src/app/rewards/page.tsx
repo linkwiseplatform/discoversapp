@@ -16,6 +16,65 @@ import { ref, get, update } from 'firebase/database';
 import type { GameConfig, UserProgress } from '@/lib/types';
 import { isToday } from 'date-fns';
 
+
+const ConfettiPiece = ({ id }: { id: number }) => {
+    const style = {
+        '--angle-start': `${Math.random() * 360}deg`,
+        '--angle-end': `${Math.random() * 360 + 360}deg`,
+        '--x-start': `${Math.random() * 100}vw`,
+        '--y-start': `${Math.random() * 100}vh`,
+        '--duration': `${Math.random() * 3 + 2}s`,
+        '--delay': `${Math.random() * 2}s`,
+        backgroundColor: ['#E89C27', '#3F7242', '#FFD700', '#FFFFFF', '#fde047', '#f97316', '#4ade80'][Math.floor(Math.random() * 7)],
+    } as React.CSSProperties;
+
+    return <div key={id} className="confetti-piece" style={style} />;
+};
+
+const ConfettiAnimation = () => {
+    return (
+        <>
+            <style jsx>{`
+                @keyframes fall {
+                    0% {
+                        transform: translate(var(--x-start), var(--y-start)) rotate(var(--angle-start));
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translate(calc(var(--x-start) + ${Math.random() * 100 - 50}px), 110vh) rotate(var(--angle-end));
+                        opacity: 0;
+                    }
+                }
+
+                .confetti-container {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                    overflow: hidden;
+                    z-index: -1;
+                }
+
+                .confetti-piece {
+                    position: absolute;
+                    width: 8px;
+                    height: 16px;
+                    will-change: transform, opacity;
+                    animation: fall var(--duration) linear var(--delay) infinite;
+                }
+            `}</style>
+            <div className="confetti-container">
+                {Array.from({ length: 100 }).map((_, i) => (
+                    <ConfettiPiece key={i} id={i} />
+                ))}
+            </div>
+        </>
+    );
+};
+
+
 function CountdownTimer({ expiryTimestamp }: { expiryTimestamp: number }) {
   const calculateTimeLeft = () => {
     const difference = expiryTimestamp - new Date().getTime();
@@ -217,7 +276,8 @@ function RewardsPageContent({ user }: { user: User | null }) {
   }
 
   return (
-      <div className="container py-8 text-center">
+      <div className="container py-8 text-center relative">
+        <ConfettiAnimation />
         <h1 className="font-headline text-4xl mb-8">모든 퀘스트 완료!</h1>
         
         <CouponCard isDisabled={couponDisabled} expiryDate={expiryDate} expiryTimestamp={expiryTimestamp} config={gameConfig} />
