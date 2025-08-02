@@ -50,10 +50,21 @@ function AdminLoginPage({ onLogin }: { onLogin: () => void }) {
 
 function AdminDashboard({ currentUser }: { currentUser: User }) {
   const { toast } = useToast();
-  const [admins, setAdmins] = useState<Record<string, Admin>>({});
-  const [config, setConfig] = useState<GameConfig | null>(null);
+  const [admins, setAdmins] = useState<Record<string, Admin>>({ 'dev-id': {id: 'dev-user', name: '개발자' }});
+  const [config, setConfig] = useState<GameConfig | null>(() => {
+     if (process.env.NODE_ENV === 'development') {
+        return {
+            numberOfStages: 3,
+            quests: Array(3).fill(DEFAULT_QUEST),
+            couponTitle: '보상 쿠폰',
+            couponSubtitle: '모험을 완료해주셔서 감사합니다!',
+            adminCode: '1234',
+            gameStartCode: 'START',
+        }
+     }
+     return null;
+  });
   const [qrCodeUrls, setQrCodeUrls] = useState<string[]>([]);
-  const [pageLoading, setPageLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   
   const [newAdminName, setNewAdminName] = useState('');
@@ -61,9 +72,12 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
 
   const [recentUsers, setRecentUsers] = useState<UserProgress[]>([]);
 
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   useEffect(() => {
+    if (isDevelopment) return;
+
     const fetchData = async () => {
-      setPageLoading(true);
       try {
         const adminRef = ref(db, 'admins');
         const configRef = ref(db, 'config');
@@ -96,12 +110,10 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
       } catch (error) {
         toast({ variant: 'destructive', title: '오류', description: '데이터를 불러오는 데 실패했습니다.' });
         console.error(error);
-      } finally {
-        setPageLoading(false);
       }
     };
     fetchData();
-  }, [toast]);
+  }, [isDevelopment, toast]);
   
   useEffect(() => {
     if (config?.quests) {
@@ -207,7 +219,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
       }
   };
 
-  if (pageLoading || !config) {
+  if (!config) {
     return (
       <div className="container py-8 space-y-6">
         <div className="flex justify-between items-center">
@@ -407,9 +419,7 @@ function Page() {
 }
 
 export default function AdminPage() {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
-  if (isDevelopment) {
+  if (process.env.NODE_ENV === 'development') {
     const devUser: User = { 
       uid: 'dev-user', 
       displayName: '개발자',
@@ -432,3 +442,5 @@ export default function AdminPage() {
 
   return <Page />;
 }
+
+    
