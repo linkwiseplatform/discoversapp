@@ -129,6 +129,8 @@ function QuestPageContent({ user }: { user: User | null }) {
 
   const unlockedStages = userProgress?.unlockedStages ?? 0;
   const totalStages = gameConfig?.numberOfStages ?? 0;
+  
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
      if (Math.random() > 0.5) {
@@ -178,9 +180,23 @@ function QuestPageContent({ user }: { user: User | null }) {
       }
     };
     
-    fetchConfigAndProgress();
+    if (isDevelopment) {
+        const devConfig = {
+            numberOfStages: 6,
+            quests: Array(6).fill({description: "개발용 퀘스트 설명입니다.", qrCode: "DEV_QR"}),
+            couponTitle: '개발용 쿠폰',
+            couponSubtitle: '개발을 완료해주셔서 감사합니다!',
+            adminCode: '0000',
+            gameStartCode: 'START'
+        };
+        setGameConfig(devConfig);
+        setUserProgress({ uid: 'dev-user', name: '개발자', unlockedStages: 0, lastPlayed: Date.now() });
+        setPageLoading(false);
+    } else {
+        fetchConfigAndProgress();
+    }
 
-  }, [user]);
+  }, [user, isDevelopment]);
   
    useEffect(() => {
     if (typeof prevUnlockedStages !== 'undefined' && unlockedStages > prevUnlockedStages) {
@@ -201,9 +217,14 @@ function QuestPageContent({ user }: { user: User | null }) {
   
   const handleGenderToggle = async () => {
     const newCharacter = character === 'male' ? 'female' : 'male';
-    setCharacter(newCharacter);
+    setCharacter(newCharacter); // Update local state immediately for instant feedback
     if(user) {
-        await set(ref(db, `userProgress/${user.uid}/character`), newCharacter);
+        try {
+            await set(ref(db, `userProgress/${user.uid}/character`), newCharacter);
+        } catch (error) {
+            console.error("Failed to save character preference:", error);
+            // Optionally, revert the change and show a toast message
+        }
     }
   };
 
@@ -414,5 +435,3 @@ export default function QuestsPage() {
   
   return <Page />;
 }
-
-    
