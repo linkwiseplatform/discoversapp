@@ -92,17 +92,25 @@ export default function Home() {
     }
   }, [user, authLoading, router]);
 
-  const handleStartCodeSubmit = async () => {
+  const handleStartCodeChange = (value: string) => {
+    setStartCode(value);
     if (!gameConfig) return;
-    if (process.env.NODE_ENV === 'development' || startCode.trim() === gameConfig?.gameStartCode) {
+
+    if (process.env.NODE_ENV === 'development' || value.trim() === gameConfig.gameStartCode) {
       setShowLogin(true);
     } else {
-      toast({
-        title: '코드 오류',
-        description: '시작 코드가 올바르지 않습니다.',
-        variant: 'destructive',
-      });
-      setStartCode('');
+      setShowLogin(false);
+    }
+  };
+
+  const handleStartCodeSubmit = () => {
+    if (!gameConfig) return;
+    if (startCode.trim() !== gameConfig.gameStartCode) {
+         toast({
+            title: '코드 오류',
+            description: '시작 코드가 올바르지 않습니다.',
+            variant: 'destructive',
+        });
     }
   };
 
@@ -159,7 +167,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
              {showLogin ? (
-                <Button onClick={handleLogin} className="w-full gap-2">
+                <Button onClick={handleLogin} className="w-full gap-2 h-12 text-lg">
                     <KakaoIcon />
                     카카오 로그인으로 시작
                 </Button>
@@ -169,14 +177,11 @@ export default function Home() {
                   id="start-code"
                   placeholder="시작 코드를 입력하세요"
                   value={startCode}
-                  onChange={(e) => setStartCode(e.target.value)}
+                  onChange={(e) => handleStartCodeChange(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleStartCodeSubmit()}
                   required
-                  className="text-center text-lg"
+                  className="text-center text-lg h-12"
                 />
-                <Button onClick={handleStartCodeSubmit} className="w-full">
-                  입장하기
-                </Button>
               </div>
              )}
           </CardContent>
