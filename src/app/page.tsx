@@ -27,7 +27,7 @@ function GameInstructionsDialog() {
       <DialogTrigger asChild>
         <button className="font-headline text-lg text-white cursor-pointer hover:underline">게임 방법</button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md bg-transparent border-none shadow-none text-white">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">게임 설명</DialogTitle>
           <DialogDescription>
