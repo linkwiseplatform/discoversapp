@@ -163,7 +163,7 @@ export default function Home() {
                   onChange={(e) => handleStartCodeChange(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleStartCodeSubmit()}
                   required
-                  className="text-center text-lg h-12"
+                  className="text-center text-lg h-12 text-black"
                 />
               </div>
              )}
