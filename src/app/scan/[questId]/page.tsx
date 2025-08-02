@@ -246,7 +246,7 @@ function ScanPageContent({ user }: { user: User | null }) {
         <ArrowLeft className="w-6 h-6" />
       </Button>
 
-      <div className="flex-grow flex flex-col justify-center w-full max-w-md text-center">
+      <div className="flex-grow flex flex-col justify-center w-full max-w-md text-center pt-16">
         <p className="mb-6 [text-shadow:1px_1px_2px_rgba(0,0,0,0.7)] text-lg">
           {quest.description}
         </p>
