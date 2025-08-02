@@ -117,20 +117,32 @@ const questPositions = [
     { top: '94.5%', left: '50%' }    // 10번 퀘스트
 ];
 
+const boardImageUrls: Record<number, string> = {
+  3: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-3.png?alt=media&token=93db99fe-9373-47a2-93dd-029476c46c9d",
+  4: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-4.png?alt=media&token=663982f1-f784-4084-99e2-24f56221378f",
+  5: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-5.png?alt=media&token=abf50c63-7e7b-4b7e-a8cf-a11bb2af8c13",
+  6: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-6.png?alt=media&token=828e4d6d-b322-4431-bd42-245a93464cf4",
+  7: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-7.png?alt=media&token=f4d5b6b6-7371-4819-a322-91349f6f405d",
+  8: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-8.png?alt=media&token=59326e20-d0ed-406c-b4c0-ff50cf4d5407",
+  9: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-9.png?alt=media&token=83838acb-a7a2-4135-8f6a-cf053fbaf659",
+  10: "https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-10.png?alt=media&token=770a3a99-8eba-47ed-a85e-852664ec71fd",
+};
+
 
 function QuestPageContent({ user }: { user: User | null }) {
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
   const [character, setCharacter] = useState<Character>('female');
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
 
   const prevUnlockedStages = usePrevious(userProgress?.unlockedStages);
   const [showConfettiAt, setShowConfettiAt] = useState<{ top: string, left: string } | null>(null);
 
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   const unlockedStages = userProgress?.unlockedStages ?? 0;
   const totalStages = gameConfig?.numberOfStages ?? 0;
   
-  const isDevelopment = process.env.NODE_ENV === 'development';
 
   useEffect(() => {
      if (Math.random() > 0.5) {
@@ -139,8 +151,10 @@ function QuestPageContent({ user }: { user: User | null }) {
   }, []);
 
   useEffect(() => {
+    if (isDevelopment) return;
+
+    setPageLoading(true);
     const fetchConfigAndProgress = async () => {
-      setPageLoading(true);
       try {
         const configRef = ref(db, 'config');
         const configSnapshot = await get(configRef);
@@ -171,32 +185,35 @@ function QuestPageContent({ user }: { user: User | null }) {
             } else {
               setUserProgress({ uid: user.uid, name: user.displayName || '탐험가', unlockedStages: 0, lastPlayed: Date.now() });
             }
+            setPageLoading(false);
           });
+        } else {
+           setPageLoading(false);
         }
       } catch (error) {
         console.error("Failed to fetch game config:", error);
-      } finally {
         setPageLoading(false);
       }
     };
     
-    if (isDevelopment) {
-        const devConfig = {
-            numberOfStages: 6,
-            quests: Array(6).fill({description: "개발용 퀘스트 설명입니다.", qrCode: "DEV_QR"}),
-            couponTitle: '개발용 쿠폰',
-            couponSubtitle: '개발을 완료해주셔서 감사합니다!',
-            adminCode: '0000',
-            gameStartCode: 'START'
-        };
-        setGameConfig(devConfig);
-        setUserProgress({ uid: 'dev-user', name: '개발자', unlockedStages: 0, lastPlayed: Date.now() });
-        setPageLoading(false);
-    } else {
-        fetchConfigAndProgress();
-    }
+    fetchConfigAndProgress();
 
   }, [user, isDevelopment]);
+
+  useEffect(() => {
+    if(isDevelopment) {
+      const devConfig = {
+          numberOfStages: 6,
+          quests: Array(6).fill({description: "개발용 퀘스트 설명입니다.", qrCode: "DEV_QR"}),
+          couponTitle: '개발용 쿠폰',
+          couponSubtitle: '개발을 완료해주셔서 감사합니다!',
+          adminCode: '0000',
+          gameStartCode: 'START'
+      };
+      setGameConfig(devConfig);
+      setUserProgress({ uid: 'dev-user', name: '개발자', unlockedStages: 0, lastPlayed: Date.now() });
+    }
+  }, [isDevelopment]);
   
    useEffect(() => {
     if (typeof prevUnlockedStages !== 'undefined' && unlockedStages > prevUnlockedStages) {
@@ -218,7 +235,7 @@ function QuestPageContent({ user }: { user: User | null }) {
   const handleGenderToggle = async () => {
     const newCharacter = character === 'male' ? 'female' : 'male';
     setCharacter(newCharacter); // Update local state immediately for instant feedback
-    if(user) {
+    if(user && !isDevelopment) {
         try {
             await set(ref(db, `userProgress/${user.uid}/character`), newCharacter);
         } catch (error) {
@@ -244,7 +261,7 @@ function QuestPageContent({ user }: { user: User | null }) {
 
   const progressPercentage = totalStages > 0 ? (unlockedStages / totalStages) * 100 : 0;
   const allComplete = totalStages > 0 && unlockedStages >= totalStages;
-  const boardImageUrl = totalStages > 0 ? `https://firebasestorage.googleapis.com/v0/b/discoversapp.firebasestorage.app/o/stage-${totalStages}.png?alt=media` : '';
+  const boardImageUrl = boardImageUrls[totalStages] || '';
 
 
   if (pageLoading) {
@@ -411,8 +428,7 @@ function Page() {
 }
 
 export default function QuestsPage() {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  if (isDevelopment) {
+  if (process.env.NODE_ENV === 'development') {
     const devUser: User = { 
       uid: 'dev-user', 
       displayName: '개발자',
