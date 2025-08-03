@@ -1,0 +1,16 @@
+{
+  "rules": {
+    ".read": true,
+    "admins": {
+      ".write": "auth != null && root.child('admins').child(auth.token.uid.replace('kakao:', '')).exists() || root.child('admins').child(auth.uid.replace(/[.#$[\\\]/]/g, '_')).exists()"
+    },
+    "config": {
+      ".write": "auth != null && root.child('admins').child(auth.token.uid.replace('kakao:', '')).exists() || root.child('admins').child(auth.uid.replace(/[.#$[\\\]/]/g, '_')).exists()"
+    },
+    "userProgress": {
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
+  }
+}
