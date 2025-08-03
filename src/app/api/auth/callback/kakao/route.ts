@@ -6,7 +6,12 @@ import { URLSearchParams } from 'url';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
-const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
+
+let KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
+if (process.env.NODE_ENV === 'development') {
+    KAKAO_REDIRECT_URI = 'http://localhost:9002/api/auth/callback/kakao';
+}
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyAF6_rVv7BXSKRv7VTsJaGbCemoOO7Ir3Q",
@@ -15,7 +20,7 @@ const firebaseConfig = {
   storageBucket: "discoversapp.firebasestorage.app",
   messagingSenderId: "207214786584",
   appId: "1:207214786584:web:a3f9687b3072c7fae06b6d",
-  databaseURL: "https://discoversapp-default-rtdb.firebaseio.com"
+  databaseURL: "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 let adminApp: App;
@@ -42,7 +47,13 @@ try {
 
 export async function POST(req: NextRequest) {
     try {
-        const { code } = await req.json();
+        const { code, requestHost } = await req.json();
+
+        let redirectUri = KAKAO_REDIRECT_URI;
+        if (requestHost) {
+          redirectUri = `${requestHost}/api/auth/callback/kakao`;
+        }
+
         if (!code) {
             return NextResponse.json({ error: 'Authorization code not provided' }, { status: 400 });
         }
@@ -56,7 +67,7 @@ export async function POST(req: NextRequest) {
             body: new URLSearchParams({
                 grant_type: 'authorization_code',
                 client_id: KAKAO_REST_API_KEY,
-                redirect_uri: KAKAO_REDIRECT_URI,
+                redirect_uri: redirectUri,
                 client_secret: KAKAO_CLIENT_SECRET,
                 code,
             }),

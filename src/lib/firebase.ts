@@ -12,7 +12,7 @@ const firebaseConfig = {
   storageBucket: "discoversapp.firebasestorage.app",
   messagingSenderId: "207214786584",
   appId: "1:207214786584:web:a3f9687b3072c7fae06b6d",
-  databaseURL: "https://discoversapp-default-rtdb.firebaseio.com"
+  databaseURL: "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
