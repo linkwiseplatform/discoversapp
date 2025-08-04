@@ -15,9 +15,8 @@ let adminApp: App;
 try {
   if (!getApps().length) {
     // In App Hosting, initializeApp() with no args will use the runtime service account
-    adminApp = initializeApp({
-        databaseURL: FIREBASE_DATABASE_URL,
-    });
+    // and automatically discover the databaseURL.
+    adminApp = initializeApp();
   } else {
     adminApp = getApp();
   }

@@ -9,6 +9,5 @@ runConfig:
   # memoryMiB: 512
 
 # Environment variables and secrets.
-# env:
-#   []
+# The env section has been removed to prevent IAM permission errors during deployment.
 
