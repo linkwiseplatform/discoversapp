@@ -8,8 +8,6 @@ const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
 const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 
-const FIREBASE_DATABASE_URL = "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app";
-
 // Initialize Firebase Admin SDK
 let adminApp: App;
 try {
@@ -119,9 +117,11 @@ export async function GET(req: NextRequest) {
     const isAdmin = req.nextUrl.searchParams.get('admin');
 
     if (code) {
-        const targetUrl = new URL(isAdmin ? '/admin' : '/auth/kakao', req.nextUrl.origin);
+        // Use a fixed, known origin instead of the dynamic one from the request.
+        const fixedOrigin = 'https://www.viscope.kr';
+        const targetUrl = new URL(isAdmin ? '/admin' : '/auth/kakao', fixedOrigin);
         targetUrl.searchParams.set('code', code);
-        // If the user is trying to log into admin, we should preserve that parameter
+        
         if (isAdmin) {
             targetUrl.searchParams.set('admin', 'true');
         }
