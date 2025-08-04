@@ -7,7 +7,3 @@ runConfig:
   # concurrency: 80
   # cpu: 1
   # memoryMiB: 512
-
-# Environment variables and secrets.
-# The env section has been removed to prevent IAM permission errors during deployment.
-
