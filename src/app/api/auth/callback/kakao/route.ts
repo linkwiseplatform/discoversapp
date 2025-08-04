@@ -14,11 +14,12 @@ if (!getApps().length) {
     try {
         adminApp = initializeApp({
             credential: applicationDefault(),
-            databaseURL: firebaseConfig.databaseURL,
             projectId: firebaseConfig.projectId,
+            databaseURL: firebaseConfig.databaseURL,
         });
     } catch (error: any) {
         console.error('Firebase Admin SDK initialization error', error);
+        // We don't throw here, to allow the POST function to handle the uninitialized state
     }
 } else {
     adminApp = getApp();
