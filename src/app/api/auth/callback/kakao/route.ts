@@ -1,37 +1,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApp, getApps, App, applicationDefault } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { firebaseConfig } from '@/lib/firebase';
+import { adminAuth } from '@/lib/firebase-admin';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
 const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 
-// Initialize Firebase Admin SDK
-let adminApp: App;
-if (!getApps().length) {
-    try {
-        adminApp = initializeApp({
-            credential: applicationDefault(),
-            projectId: firebaseConfig.projectId,
-            databaseURL: firebaseConfig.databaseURL,
-        });
-    } catch (error: any) {
-        console.error('Firebase Admin SDK initialization error', error);
-        // We don't throw here, to allow the POST function to handle the uninitialized state
-    }
-} else {
-    adminApp = getApp();
-}
-
-
 export async function POST(req: NextRequest) {
-    if (!adminApp) {
-        console.error("Fatal: Firebase Admin SDK is not initialized.");
-        return NextResponse.json({ error: 'Internal Server Error', details: 'Firebase Admin SDK failed to initialize.' }, { status: 500 });
-    }
-
     try {
         const { code } = await req.json();
 
@@ -81,17 +56,15 @@ export async function POST(req: NextRequest) {
         const displayName = userData.properties.nickname;
         const photoURL = userData.properties.profile_image;
         
-        const firebaseAuth = getAuth(adminApp);
-        
         // 3. Update or create user in Firebase Auth
         try {
-            await firebaseAuth.updateUser(uid, {
+            await adminAuth.updateUser(uid, {
                 displayName,
                 photoURL,
             });
         } catch (error: any) {
             if (error.code === 'auth/user-not-found') {
-                await firebaseAuth.createUser({
+                await adminAuth.createUser({
                     uid,
                     displayName,
                     photoURL,
@@ -103,7 +76,7 @@ export async function POST(req: NextRequest) {
         }
         
         // 4. Create custom token
-        const customToken = await firebaseAuth.createCustomToken(uid);
+        const customToken = await adminAuth.createCustomToken(uid);
 
         return NextResponse.json({ token: customToken, user: { uid, displayName, photoURL } });
 
