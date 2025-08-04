@@ -1,8 +1,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApp, getApps, App } from 'firebase-admin/app';
+import { initializeApp, getApp, getApps, App, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { URLSearchParams } from 'url';
+import { firebaseConfig } from '@/lib/firebase';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
@@ -12,12 +12,13 @@ const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 let adminApp: App;
 if (!getApps().length) {
     try {
-        // In App Hosting, initializeApp() with no args will use the runtime service account
-        // and automatically discover the databaseURL.
-        adminApp = initializeApp();
+        adminApp = initializeApp({
+            credential: applicationDefault(),
+            databaseURL: firebaseConfig.databaseURL,
+            projectId: firebaseConfig.projectId,
+        });
     } catch (error: any) {
         console.error('Firebase Admin SDK initialization error', error);
-        // If initialization fails, we must not proceed.
     }
 } else {
     adminApp = getApp();
@@ -96,7 +97,6 @@ export async function POST(req: NextRequest) {
                 });
             } else {
                 console.error("Firebase updateUser/createUser error:", error);
-                // Throw a more specific error for the final catch block
                 throw new Error(`Firebase user operation failed: ${error.message} (Code: ${error.code})`);
             }
         }
