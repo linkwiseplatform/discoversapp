@@ -13,19 +13,14 @@ const FIREBASE_DATABASE_URL = "https://discoversapp-default-rtdb.asia-southeast1
 let adminApp: App;
 try {
     if (!getApps().length) {
-       // App Hosting 환경에서는 자동으로 인증 정보를 가져옵니다.
-       if (process.env.NODE_ENV === 'production') {
-         adminApp = initializeApp({ databaseURL: FIREBASE_DATABASE_URL });
-       } else {
-         // 로컬 개발 환경에서는 서비스 계정 키가 필요할 수 있습니다.
-         // 하지만 현재 구조에서는 환경 변수 없이 기본 설정을 사용합니다.
-         adminApp = initializeApp({ databaseURL: FIREBASE_DATABASE_URL });
-       }
+       adminApp = initializeApp({ databaseURL: FIREBASE_DATABASE_URL });
     } else {
         adminApp = getApp();
     }
 } catch (error: any) {
     console.error('Firebase Admin SDK initialization error', error);
+    // 앱 초기화 실패는 심각한 오류이므로, 여기서 미리 처리할 수 있습니다.
+    // 하지만 대부분의 경우, App Hosting 환경에서는 자동으로 성공합니다.
 }
 
 export async function POST(req: NextRequest) {
@@ -45,7 +40,7 @@ export async function POST(req: NextRequest) {
             body: new URLSearchParams({
                 grant_type: 'authorization_code',
                 client_id: KAKAO_REST_API_KEY,
-                redirect_uri: KAKAO_REDIRECT_URI, // 고정된 URI 사용
+                redirect_uri: KAKAO_REDIRECT_URI,
                 client_secret: KAKAO_CLIENT_SECRET,
                 code,
             }),
@@ -54,8 +49,8 @@ export async function POST(req: NextRequest) {
         const tokenData = await tokenResponse.json();
         
         if (tokenData.error) {
-            console.error('Kakao token error:', tokenData);
-            return NextResponse.json({ error: tokenData.error_description || 'Failed to get access token' }, { status: 400 });
+            console.error('Kakao token exchange error:', tokenData);
+            return NextResponse.json({ error: 'Failed to exchange Kakao token', details: tokenData.error_description }, { status: 400 });
         }
         
         const { access_token } = tokenData;
@@ -71,13 +66,16 @@ export async function POST(req: NextRequest) {
         
         if (userData.code) {
              console.error('Kakao user info error:', userData);
-             return NextResponse.json({ error: userData.msg || 'Failed to get user info' }, { status: 400 });
+             return NextResponse.json({ error: 'Failed to get user info from Kakao', details: userData.msg }, { status: 400 });
         }
 
         const uid = `kakao:${userData.id}`;
         const displayName = userData.properties.nickname;
         const photoURL = userData.properties.profile_image;
 
+        if (!adminApp) {
+            throw new Error("Firebase Admin SDK is not initialized.");
+        }
         const firebaseAuth = getAuth(adminApp);
         
         // 3. Update or create user in Firebase Auth
@@ -94,17 +92,32 @@ export async function POST(req: NextRequest) {
                     photoURL,
                 });
             } else {
-                throw error;
+                console.error("Firebase updateUser error:", error);
+                throw error; // Rethrow other errors
             }
         }
         
         // 4. Create custom token
         const customToken = await firebaseAuth.createCustomToken(uid);
 
-        return NextResponse.json({ token: customToken, user: userData });
+        return NextResponse.json({ token: customToken, user: { uid, displayName, photoURL } });
 
     } catch (error: any) {
-        console.error('Auth callback error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+        console.error('Auth callback internal error:', error);
+        return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
+}
+
+export async function GET(req: NextRequest) {
+    const code = req.nextUrl.searchParams.get('code');
+    const isAdmin = req.nextUrl.searchParams.get('admin');
+
+    if (code) {
+        // This is a simplified redirect to handle the client-side navigation.
+        const targetUrl = new URL(isAdmin ? '/admin' : '/auth/kakao', req.nextUrl.origin);
+        targetUrl.searchParams.set('code', code);
+        return NextResponse.redirect(targetUrl);
+    }
+    
+    return NextResponse.json({ error: 'Authorization code not found in GET request' }, { status: 400 });
 }

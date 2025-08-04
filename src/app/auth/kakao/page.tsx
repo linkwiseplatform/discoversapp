@@ -7,21 +7,20 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { ref, set, get } from 'firebase/database';
 import { Loader2 } from 'lucide-react';
-import Script from 'next/script';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
+// This redirect URI must be exactly the same as the one registered in Kakao Dev Console
 const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 
 function KakaoLogin() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const isAdminLogin = searchParams.get('admin') === 'true';
 
   useEffect(() => {
-    // 환경에 관계없이 항상 고정된 리디렉션 URI를 사용합니다.
-    const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${KAKAO_REDIRECT_URI}&response_type=code`;
+    const adminQueryParam = isAdminLogin ? '&admin=true' : '';
+    const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${KAKAO_REDIRECT_URI}&response_type=code${adminQueryParam}`;
     window.location.href = KAKAO_AUTH_URL;
-  }, []);
+  }, [isAdminLogin]);
 
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
@@ -35,10 +34,10 @@ function AuthCallback() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
+  const isAdminLogin = searchParams.has('admin');
   
   useEffect(() => {
     const code = searchParams.get('code');
-    const isAdmin = searchParams.get('admin') === 'true';
     const error = searchParams.get('error');
 
     if (error) {
@@ -53,19 +52,17 @@ function AuthCallback() {
         try {
           const response = await fetch(`/api/auth/callback/kakao`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ code }) // 더 이상 호스트 정보를 보내지 않습니다.
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
           });
 
           if (!response.ok) {
             const errorData = await response.json();
             console.error("Token exchange failed:", errorData);
-            throw new Error(errorData.error || 'Failed to get custom token');
+            throw new Error(errorData.details || 'Failed to get custom token');
           }
 
-          const { token, user: kakaoUser } = await response.json();
+          const { token, user: apiUser } = await response.json();
           const loggedInUser = await login(token);
 
           if (loggedInUser) {
@@ -75,23 +72,24 @@ function AuthCallback() {
             if (!snapshot.exists()) {
               await set(userProgressRef, {
                 uid: loggedInUser.uid,
-                name: kakaoUser.properties.nickname || `탐험가${loggedInUser.uid.substring(0,4)}`,
+                name: apiUser.displayName || `탐험가${loggedInUser.uid.substring(0,4)}`,
                 unlockedStages: 0,
                 lastPlayed: Date.now(),
               });
             }
-            router.replace(isAdmin ? '/admin' : '/quests');
+            router.replace(isAdminLogin ? '/admin' : '/quests');
           } else {
              router.replace('/');
           }
-        } catch (err) {
-          console.error('Login failed', err);
+        } catch (err: any) {
+          console.error('Login process failed', err);
+          alert(`로그인에 실패했습니다: ${err.message}`);
           router.replace('/');
         }
       };
       handleLogin();
     }
-  }, [searchParams, router, login]);
+  }, [searchParams, router, login, isAdminLogin]);
 
   return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
@@ -103,7 +101,7 @@ function AuthCallback() {
 
 export default function KakaoAuthPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
             <KakaoAuthPageInternal />
         </Suspense>
     )
@@ -113,5 +111,7 @@ function KakaoAuthPageInternal() {
   const searchParams = useSearchParams();
   const code = searchParams.get('code');
 
+  // If a code is in the URL, we're in the callback phase.
+  // Otherwise, we need to initiate the login.
   return code ? <AuthCallback /> : <KakaoLogin />;
 }
