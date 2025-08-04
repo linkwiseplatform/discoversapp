@@ -60,7 +60,7 @@ function AuthCallback() {
 
           if (!response.ok) {
             console.error("Token exchange failed:", responseBody);
-            throw new Error(responseBody.details || `로그인 서버 오류: ${response.status}`);
+            throw new Error(responseBody.details || `로그인 서버 오류: ${response.status} - ${responseBody.error || 'Unknown error'}`);
           }
 
           const { token, user: apiUser } = responseBody;

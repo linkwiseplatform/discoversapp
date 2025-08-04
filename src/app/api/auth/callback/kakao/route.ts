@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
             } else {
                 console.error("Firebase updateUser/createUser error:", error);
                 // Throw a more specific error for the final catch block
-                throw new Error(`Firebase user operation failed: ${error.message}`);
+                throw new Error(`Firebase user operation failed: ${error.message} (Code: ${error.code})`);
             }
         }
         
@@ -117,7 +117,6 @@ export async function GET(req: NextRequest) {
     const isAdmin = req.nextUrl.searchParams.get('admin');
 
     if (code) {
-        // Use a fixed, known origin instead of the dynamic one from the request.
         const fixedOrigin = 'https://www.viscope.kr';
         const targetUrl = new URL(isAdmin ? '/admin' : '/auth/kakao', fixedOrigin);
         targetUrl.searchParams.set('code', code);
