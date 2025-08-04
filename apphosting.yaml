@@ -9,5 +9,6 @@ runConfig:
   # memoryMiB: 512
 
 # Environment variables and secrets.
-env:
-  []
+# env:
+#   []
+

@@ -10,20 +10,30 @@ const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 
 const FIREBASE_DATABASE_URL = "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app";
 
+// Initialize Firebase Admin SDK
 let adminApp: App;
 try {
-    if (!getApps().length) {
-       adminApp = initializeApp({ databaseURL: FIREBASE_DATABASE_URL });
-    } else {
-        adminApp = getApp();
-    }
+  if (!getApps().length) {
+    // In App Hosting, initializeApp() with no args will use the runtime service account
+    adminApp = initializeApp({
+        databaseURL: FIREBASE_DATABASE_URL,
+    });
+  } else {
+    adminApp = getApp();
+  }
 } catch (error: any) {
-    console.error('Firebase Admin SDK initialization error', error);
-    // 앱 초기화 실패는 심각한 오류이므로, 여기서 미리 처리할 수 있습니다.
-    // 하지만 대부분의 경우, App Hosting 환경에서는 자동으로 성공합니다.
+  console.error('Firebase Admin SDK initialization error', error);
+  // If initialization fails, we should not proceed.
+  // This helps in logging the root cause during deployment or runtime.
 }
 
+
 export async function POST(req: NextRequest) {
+    if (!adminApp) {
+        console.error("Fatal: Firebase Admin SDK is not initialized.");
+        return NextResponse.json({ error: 'Internal Server Error', details: 'Firebase Admin SDK failed to initialize.' }, { status: 500 });
+    }
+
     try {
         const { code } = await req.json();
 
@@ -72,10 +82,7 @@ export async function POST(req: NextRequest) {
         const uid = `kakao:${userData.id}`;
         const displayName = userData.properties.nickname;
         const photoURL = userData.properties.profile_image;
-
-        if (!adminApp) {
-            throw new Error("Firebase Admin SDK is not initialized.");
-        }
+        
         const firebaseAuth = getAuth(adminApp);
         
         // 3. Update or create user in Firebase Auth
@@ -113,9 +120,12 @@ export async function GET(req: NextRequest) {
     const isAdmin = req.nextUrl.searchParams.get('admin');
 
     if (code) {
-        // This is a simplified redirect to handle the client-side navigation.
         const targetUrl = new URL(isAdmin ? '/admin' : '/auth/kakao', req.nextUrl.origin);
         targetUrl.searchParams.set('code', code);
+        // If the user is trying to log into admin, we should preserve that parameter
+        if (isAdmin) {
+            targetUrl.searchParams.set('admin', 'true');
+        }
         return NextResponse.redirect(targetUrl);
     }
     
