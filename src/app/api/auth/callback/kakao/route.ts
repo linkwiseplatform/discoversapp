@@ -6,37 +6,20 @@ import { URLSearchParams } from 'url';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
+const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 
-let KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
-if (process.env.NODE_ENV === 'development') {
-    KAKAO_REDIRECT_URI = 'http://localhost:9002/api/auth/callback/kakao';
-}
-
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAF6_rVv7BXSKRv7VTsJaGbCemoOO7Ir3Q",
-  authDomain: "discoversapp.firebaseapp.com",
-  projectId: "discoversapp",
-  storageBucket: "discoversapp.firebasestorage.app",
-  messagingSenderId: "207214786584",
-  appId: "1:207214786584:web:a3f9687b3072c7fae06b6d",
-  databaseURL: "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app"
-};
+const FIREBASE_DATABASE_URL = "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app";
 
 let adminApp: App;
 try {
     if (!getApps().length) {
-       if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string);
-         adminApp = initializeApp({
-            credential: cert(serviceAccount),
-            databaseURL: firebaseConfig.databaseURL,
-        });
+       // App Hosting 환경에서는 자동으로 인증 정보를 가져옵니다.
+       if (process.env.NODE_ENV === 'production') {
+         adminApp = initializeApp({ databaseURL: FIREBASE_DATABASE_URL });
        } else {
-         adminApp = initializeApp({
-            projectId: firebaseConfig.projectId,
-            databaseURL: firebaseConfig.databaseURL,
-        });
+         // 로컬 개발 환경에서는 서비스 계정 키가 필요할 수 있습니다.
+         // 하지만 현재 구조에서는 환경 변수 없이 기본 설정을 사용합니다.
+         adminApp = initializeApp({ databaseURL: FIREBASE_DATABASE_URL });
        }
     } else {
         adminApp = getApp();
@@ -47,12 +30,7 @@ try {
 
 export async function POST(req: NextRequest) {
     try {
-        const { code, requestHost } = await req.json();
-
-        let redirectUri = KAKAO_REDIRECT_URI;
-        if (requestHost) {
-          redirectUri = `${requestHost}/api/auth/callback/kakao`;
-        }
+        const { code } = await req.json();
 
         if (!code) {
             return NextResponse.json({ error: 'Authorization code not provided' }, { status: 400 });
@@ -67,7 +45,7 @@ export async function POST(req: NextRequest) {
             body: new URLSearchParams({
                 grant_type: 'authorization_code',
                 client_id: KAKAO_REST_API_KEY,
-                redirect_uri: redirectUri,
+                redirect_uri: KAKAO_REDIRECT_URI, // 고정된 URI 사용
                 client_secret: KAKAO_CLIENT_SECRET,
                 code,
             }),

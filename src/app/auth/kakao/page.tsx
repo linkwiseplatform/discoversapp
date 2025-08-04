@@ -18,6 +18,7 @@ function KakaoLogin() {
   const isAdminLogin = searchParams.get('admin') === 'true';
 
   useEffect(() => {
+    // 환경에 관계없이 항상 고정된 리디렉션 URI를 사용합니다.
     const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${KAKAO_REDIRECT_URI}&response_type=code`;
     window.location.href = KAKAO_AUTH_URL;
   }, []);
@@ -55,11 +56,13 @@ function AuthCallback() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ code })
+            body: JSON.stringify({ code }) // 더 이상 호스트 정보를 보내지 않습니다.
           });
 
           if (!response.ok) {
-            throw new Error('Failed to get custom token');
+            const errorData = await response.json();
+            console.error("Token exchange failed:", errorData);
+            throw new Error(errorData.error || 'Failed to get custom token');
           }
 
           const { token, user: kakaoUser } = await response.json();
