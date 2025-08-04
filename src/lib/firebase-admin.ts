@@ -12,6 +12,7 @@ let adminApp: App;
 if (!getApps().length) {
   adminApp = initializeApp({
     credential: applicationDefault(),
+    projectId: firebaseConfig.projectId,
     databaseURL: firebaseConfig.databaseURL,
   });
 } else {
