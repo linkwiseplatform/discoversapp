@@ -55,14 +55,15 @@ function AuthCallback() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code })
           });
+          
+          const responseBody = await response.json();
 
           if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Token exchange failed:", errorData);
-            throw new Error(errorData.details || 'Failed to get custom token');
+            console.error("Token exchange failed:", responseBody);
+            throw new Error(responseBody.details || `로그인 서버 오류: ${response.status}`);
           }
 
-          const { token, user: apiUser } = await response.json();
+          const { token, user: apiUser } = responseBody;
           const loggedInUser = await login(token);
 
           if (loggedInUser) {
