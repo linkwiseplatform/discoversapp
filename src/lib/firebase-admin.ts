@@ -1,13 +1,9 @@
 
-import { initializeApp, getApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getDatabase } from 'firebase-admin/database';
 
-// IMPORTANT: Path to the service account key file
-// You need to upload this file to your server environment
-// and set the GOOGLE_APPLICATION_CREDENTIALS environment variable.
-// For Firebase App Hosting, you can set these as environment variables directly.
-
+// These environment variables are set in the Firebase App Hosting console.
 const serviceAccount = {
   projectId: process.env.GCLOUD_PROJECT,
   clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
@@ -16,7 +12,8 @@ const serviceAccount = {
 
 const databaseURL = process.env.FIREBASE_DATABASE_URL;
 
-let adminApp;
+let adminApp: App;
+
 if (!getApps().length) {
   adminApp = initializeApp({
     credential: cert(serviceAccount),
