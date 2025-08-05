@@ -1,24 +1,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps, App, applicationDefault } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
-const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
-
-const firebaseConfig = {
-  projectId: "discoversapp",
-  databaseURL: "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app"
-};
+const KAKAO_REDIRECT_URI = 'https://discovers-2a970.web.app/api/auth/callback/kakao';
 
 // Initialize Firebase Admin SDK if not already initialized
 if (!getApps().length) {
-  initializeApp({
-    credential: applicationDefault(),
-    databaseURL: firebaseConfig.databaseURL,
-    projectId: firebaseConfig.projectId,
-  });
+  initializeApp();
 }
 
 const adminAuth = getAuth();
@@ -89,7 +80,6 @@ export async function POST(req: NextRequest) {
                 });
             } else {
                 console.error("Firebase updateUser/createUser error:", error);
-                // Throw a detailed error to be caught by the final catch block
                 throw new Error(`Firebase user operation failed: ${error.message} (Code: ${error.code})`);
             }
         }
@@ -110,9 +100,8 @@ export async function GET(req: NextRequest) {
     const isAdmin = req.nextUrl.searchParams.get('admin');
 
     if (code) {
-        // Always redirect to the production URL, not a relative or dynamically constructed one.
-        const fixedOrigin = 'https://www.viscope.kr';
-        const targetUrl = new URL(isAdmin ? '/admin' : '/auth/kakao', fixedOrigin);
+        // Redirect to the appropriate frontend page with the code.
+        const targetUrl = new URL(isAdmin ? '/admin' : '/auth/kakao', req.nextUrl.origin);
         targetUrl.searchParams.set('code', code);
         
         if (isAdmin) {
@@ -121,6 +110,5 @@ export async function GET(req: NextRequest) {
         return NextResponse.redirect(targetUrl);
     }
     
-    // This case should ideally not be hit in the normal flow.
     return NextResponse.json({ error: 'Authorization code not found in GET request' }, { status: 400 });
 }
