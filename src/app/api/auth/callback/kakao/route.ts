@@ -2,10 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { credential } from 'firebase-admin';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
-const KAKAO_REDIRECT_URI = 'https://discovers-2a970.web.app/api/auth/callback/kakao';
+const KAKAO_REDIRECT_URI = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI || 'https://discovers-2a970.web.app/api/auth/callback/kakao';
 
 // Initialize Firebase Admin SDK if not already initialized
 if (!getApps().length) {
