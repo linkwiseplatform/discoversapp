@@ -8,11 +8,11 @@ import { getDatabase } from 'firebase/database';
 export const firebaseConfig = {
   apiKey: "AIzaSyAF6_rVv7BXSKRv7VTsJaGbCemoOO7Ir3Q",
   authDomain: "discoversapp.firebaseapp.com",
+  databaseURL: "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "discoversapp",
   storageBucket: "discoversapp.firebasestorage.app",
   messagingSenderId: "207214786584",
-  appId: "1:207214786584:web:a3f9687b3072c7fae06b6d",
-  databaseURL: "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "discoversapp"
+  appId: "1:207214786584:web:a3f9687b3072c7fae06b6d"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

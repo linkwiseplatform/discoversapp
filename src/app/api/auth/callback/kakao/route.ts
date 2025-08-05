@@ -1,39 +1,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getDatabase, ref, get } from 'firebase-admin/database';
-
-// App Hosting 환경에서는 인자 없이 initializeApp()을 호출하면
-// 자동으로 올바른 프로젝트 설정과 인증 정보를 찾습니다.
-// 이 코드는 서버가 시작될 때 한 번만 실행됩니다.
-if (!getApps().length) {
-  initializeApp();
-}
-
-const adminAuth = getAuth();
-const adminDb = getDatabase();
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { ref, get } from 'firebase-admin/database';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
 const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
-
-async function verifyIsAdmin(uid: string): Promise<boolean> {
-    try {
-        const adminRef = ref(adminDb, 'admins');
-        const snapshot = await get(adminRef);
-        if (snapshot.exists()) {
-            const admins = snapshot.val() as Record<string, { id: string }>;
-            // 'kakao:' 접두사를 포함한 전체 uid와 비교
-            return Object.values(admins).some(admin => admin.id === uid);
-        }
-        return false;
-    } catch (error) {
-        console.error("Error verifying admin status:", error);
-        return false;
-    }
-}
-
 
 export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get('code');
@@ -44,7 +16,6 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // 1. Exchange authorization code for access token
         const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
             method: 'POST',
             headers: {
@@ -71,7 +42,6 @@ export async function GET(req: NextRequest) {
         
         const { access_token } = tokenData;
 
-        // 2. Get user info from Kakao
         const userResponse = await fetch('https://kapi.kakao.com/v2/user/me', {
             headers: {
                 Authorization: `Bearer ${access_token}`,
@@ -93,7 +63,14 @@ export async function GET(req: NextRequest) {
         const photoURL = userData.properties.profile_image;
 
         if (isAdminLogin) {
-            const isVerifiedAdmin = await verifyIsAdmin(uid);
+            const adminRef = ref(adminDb, 'admins');
+            const snapshot = await get(adminRef);
+            let isVerifiedAdmin = false;
+            if (snapshot.exists()) {
+                 const admins = snapshot.val() as Record<string, { id: string, name: string }>;
+                 isVerifiedAdmin = Object.values(admins).some(admin => admin.id === uid);
+            }
+           
             if (!isVerifiedAdmin) {
                  const errorUrl = new URL('/auth/error', req.nextUrl.origin);
                  errorUrl.searchParams.set('error', 'Access Denied');
@@ -102,7 +79,6 @@ export async function GET(req: NextRequest) {
             }
         }
         
-        // 3. Update or create user in Firebase Auth
         try {
             await adminAuth.updateUser(uid, {
                 displayName,
@@ -124,7 +100,6 @@ export async function GET(req: NextRequest) {
             }
         }
         
-        // 4. Create custom token and redirect
         const customToken = await adminAuth.createCustomToken(uid);
         
         const targetUrl = new URL(isAdminLogin ? '/admin' : '/auth/kakao/processing', req.nextUrl.origin);
