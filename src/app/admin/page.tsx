@@ -72,11 +72,11 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   const [recentUsers, setRecentUsers] = useState<UserProgress[]>([]);
 
   const isDevelopment = process.env.NODE_ENV === 'development';
-  const undeletableAdminId = "4346782694";
+  const undeletableAdminId = "kakao:4346782694";
 
   useEffect(() => {
     const defaultAdmins = {
-        '4346782694': { id: '4346782694', name: '강선주' }
+        'kakao:4346782694': { id: 'kakao:4346782694', name: '강선주' }
     };
     if (isDevelopment) {
       setAdmins({ ...defaultAdmins, 'dev-id': {id: 'dev-user', name: '개발자' }});
@@ -91,10 +91,12 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
         
         const [adminSnapshot, configSnapshot] = await Promise.all([get(adminRef), get(configRef)]);
 
-        if (adminSnapshot.exists()) {
+        if (adminSnapshot.exists() && Object.keys(adminSnapshot.val()).length > 0) {
           setAdmins(adminSnapshot.val());
         } else {
            setAdmins(defaultAdmins);
+           // If no admins exist, set the default one in the database as well
+           await set(adminRef, defaultAdmins);
         }
         
         let fetchedConfig: GameConfig;
@@ -179,8 +181,8 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
         toast({ variant: 'destructive', title: '입력 오류', description: '이름과 카카오 고유ID를 모두 입력해주세요.' });
         return;
     }
-    const newKey = newAdminId.replace(/[.#$[\]/]/g, '_'); // Sanitize key
-    setAdmins(prev => ({...prev, [newKey]: { id: newAdminId, name: newAdminName }}));
+    const newKey = `kakao:${newAdminId}`;
+    setAdmins(prev => ({...prev, [newKey]: { id: newKey, name: newAdminName }}));
     setNewAdminName('');
     setNewAdminId('');
     toast({ title: '성공', description: '새 관리자가 추가되었습니다. 저장 버튼을 눌러 확정하세요.' });
@@ -265,7 +267,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
         <CardContent className="space-y-4">
             <div className="flex gap-4">
                 <Input placeholder="새 관리자 이름" value={newAdminName} onChange={e => setNewAdminName(e.target.value)} />
-                <Input placeholder="새 관리자 고유ID" value={newAdminId} onChange={e => setNewAdminId(e.target.value)} />
+                <Input placeholder="새 관리자 카카오 고유ID (숫자만)" value={newAdminId} onChange={e => setNewAdminId(e.target.value)} />
                 <Button onClick={handleAddAdmin}><UserPlus className="mr-2"/>추가</Button>
             </div>
             <div>
@@ -378,7 +380,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
                                             <DialogTitle>정말로 초기화하시겠습니까?</DialogTitle>
                                             <DialogDescription>
                                                 {u.name}님의 데이터를 삭제합니다. 이 작업은 되돌릴 수 없습니다.
-                                            </DialogDescription>
+                                            </Description>
                                         </DialogHeader>
                                         <DialogFooter>
                                             <DialogClose asChild>
