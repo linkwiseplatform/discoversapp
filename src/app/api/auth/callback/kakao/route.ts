@@ -1,11 +1,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps, getApp } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getDatabase, ref, get } from 'firebase-admin/database';
 
 // App Hosting 환경에서는 인자 없이 initializeApp()을 호출하면
 // 자동으로 올바른 프로젝트 설정과 인증 정보를 찾습니다.
+// 이 코드는 서버가 시작될 때 한 번만 실행됩니다.
 if (!getApps().length) {
   initializeApp();
 }
@@ -23,6 +24,7 @@ async function verifyIsAdmin(uid: string): Promise<boolean> {
         const snapshot = await get(adminRef);
         if (snapshot.exists()) {
             const admins = snapshot.val() as Record<string, { id: string }>;
+            // 'kakao:' 접두사를 포함한 전체 uid와 비교
             return Object.values(admins).some(admin => admin.id === uid);
         }
         return false;
