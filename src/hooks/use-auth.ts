@@ -71,15 +71,12 @@ export function useAuth() {
     try {
       sessionStorage.setItem('isAdminLogin', String(isAdminLogin));
       const provider = new OAuthProvider('oidc.kakao');
-      // You can add custom parameters or scopes here if needed
-      // provider.addScope('profile');
-      // provider.setCustomParameters({ login_hint: 'user@example.com' });
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Kakao OIDC sign-in initiation failed:", error);
       toast({
         title: "로그인 시작 실패",
-        description: error.message,
+        description: "카카오 로그인 페이지로 이동하는 데 실패했습니다. 잠시 후 다시 시도해주세요.",
         variant: "destructive"
       });
     }
@@ -90,12 +87,7 @@ export function useAuth() {
         try {
             const result = await getRedirectResult(auth);
             if (result) {
-                // Successfully signed in.
-                const credential = OAuthProvider.credentialFromResult(result);
-                // You can get the OAuth access token and ID Token here.
-                // const accessToken = credential.accessToken;
-                // const idToken = credential.idToken;
-
+                // User is signed in.
                 const isAdminLogin = sessionStorage.getItem('isAdminLogin') === 'true';
                 sessionStorage.removeItem('isAdminLogin');
                 
@@ -110,7 +102,7 @@ export function useAuth() {
             if (authError.code !== 'auth/web-storage-unsupported' && authError.code !== 'auth/internal-error') {
                toast({
                    title: "로그인 처리 중 오류 발생",
-                   description: authError.message,
+                   description: "로그인 결과를 처리하는 중 오류가 발생했습니다. 다시 로그인해주세요.",
                    variant: "destructive"
                });
                router.push('/');
@@ -118,13 +110,11 @@ export function useAuth() {
         }
     };
     
-    // Only run this on initial load
-    if(!user) {
-        processRedirect();
-    }
+    // Only run this on initial load to handle the redirect
+    processRedirect();
     
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth, toast, router]);
+  }, [toast, router]);
 
   const logout = useCallback(async () => {
     try {
