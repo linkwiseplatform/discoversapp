@@ -1,27 +1,31 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps, App } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { ref, get } from 'firebase/database';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
 const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 
-// Initialize Firebase Admin SDK at the module level
-// This ensures it's done only once per server instance.
-let adminApp: App;
-if (!getApps().length) {
-  adminApp = initializeApp();
-} else {
-  adminApp = getApps()[0];
+async function verifyIsAdmin(uid: string): Promise<boolean> {
+    try {
+        const adminRef = ref(adminDb, 'admins');
+        const snapshot = await get(adminRef);
+        if (snapshot.exists()) {
+            const admins = snapshot.val() as Record<string, { id: string }>;
+            return Object.values(admins).some(admin => admin.id === uid);
+        }
+        return false;
+    } catch (error) {
+        console.error("Error verifying admin status:", error);
+        return false;
+    }
 }
-
-const adminAuth = getAuth(adminApp);
 
 
 export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get('code');
-    const isAdmin = req.nextUrl.searchParams.get('admin');
+    const isAdminLogin = req.nextUrl.searchParams.get('admin') === 'true';
 
     if (!code) {
         return NextResponse.json({ error: 'Authorization code not provided' }, { status: 400 });
@@ -47,7 +51,10 @@ export async function GET(req: NextRequest) {
         
         if (tokenData.error) {
             console.error('Kakao token exchange error:', tokenData);
-            return NextResponse.json({ error: 'Failed to exchange Kakao token', details: tokenData.error_description }, { status: 400 });
+            const errorUrl = new URL('/auth/error', req.nextUrl.origin);
+            errorUrl.searchParams.set('error', 'Kakao Token Exchange Failed');
+            errorUrl.searchParams.set('details', tokenData.error_description);
+            return NextResponse.redirect(errorUrl);
         }
         
         const { access_token } = tokenData;
@@ -63,12 +70,25 @@ export async function GET(req: NextRequest) {
         
         if (userData.code) {
              console.error('Kakao user info error:', userData);
-             return NextResponse.json({ error: 'Failed to get user info from Kakao', details: userData.msg }, { status: 400 });
+             const errorUrl = new URL('/auth/error', req.nextUrl.origin);
+             errorUrl.searchParams.set('error', 'Failed to get user info from Kakao');
+             errorUrl.searchParams.set('details', userData.msg);
+             return NextResponse.redirect(errorUrl);
         }
 
         const uid = `kakao:${userData.id}`;
         const displayName = userData.properties.nickname;
         const photoURL = userData.properties.profile_image;
+
+        if (isAdminLogin) {
+            const isVerifiedAdmin = await verifyIsAdmin(uid);
+            if (!isVerifiedAdmin) {
+                 const errorUrl = new URL('/auth/error', req.nextUrl.origin);
+                 errorUrl.searchParams.set('error', 'Access Denied');
+                 errorUrl.searchParams.set('details', 'You are not a registered administrator.');
+                 return NextResponse.redirect(errorUrl);
+            }
+        }
         
         // 3. Update or create user in Firebase Auth
         try {
@@ -85,19 +105,22 @@ export async function GET(req: NextRequest) {
                 });
             } else {
                 console.error("Firebase updateUser/createUser error:", error);
-                throw new Error(`Firebase user operation failed: ${error.message} (Code: ${error.code})`);
+                const errorUrl = new URL('/auth/error', req.nextUrl.origin);
+                errorUrl.searchParams.set('error', 'Firebase user operation failed');
+                errorUrl.searchParams.set('details', `Code: ${error.code}`);
+                return NextResponse.redirect(errorUrl);
             }
         }
         
         // 4. Create custom token and redirect
         const customToken = await adminAuth.createCustomToken(uid);
         
-        const targetUrl = new URL(isAdmin ? '/admin' : '/auth/kakao/processing', req.nextUrl.origin);
+        const targetUrl = new URL(isAdminLogin ? '/admin' : '/auth/kakao/processing', req.nextUrl.origin);
         targetUrl.searchParams.set('token', customToken);
         targetUrl.searchParams.set('displayName', displayName);
         targetUrl.searchParams.set('uid', uid);
         
-        if (isAdmin) {
+        if (isAdminLogin) {
             targetUrl.searchParams.set('admin', 'true');
         }
 
