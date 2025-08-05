@@ -13,6 +13,7 @@ if (!getApps().length) {
   adminApp = initializeApp({
     credential: applicationDefault(),
     projectId: 'discoversapp',
+    databaseURL: "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app"
   });
 } else {
   adminApp = getApps()[0];
