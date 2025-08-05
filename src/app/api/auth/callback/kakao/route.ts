@@ -1,7 +1,17 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { ref, get } from 'firebase/database';
+import { initializeApp, getApps, getApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getDatabase, ref, get } from 'firebase-admin/database';
+
+// App Hosting 환경에서는 인자 없이 initializeApp()을 호출하면
+// 자동으로 올바른 프로젝트 설정과 인증 정보를 찾습니다.
+if (!getApps().length) {
+  initializeApp();
+}
+
+const adminAuth = getAuth();
+const adminDb = getDatabase();
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
