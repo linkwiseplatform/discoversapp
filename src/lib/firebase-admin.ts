@@ -5,7 +5,7 @@ import { getDatabase } from 'firebase-admin/database';
 
 // These environment variables are set in the Firebase App Hosting console.
 const serviceAccount = {
-  projectId: process.env.GCLOUD_PROJECT,
+  projectId: "discoversapp",
   clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
   privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
 };
