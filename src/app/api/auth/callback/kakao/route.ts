@@ -7,7 +7,8 @@ const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
 const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 
-// Initialize Firebase Admin SDK if not already initialized
+// Initialize Firebase Admin SDK at the module level
+// This ensures it's done only once per server instance.
 let adminApp: App;
 if (!getApps().length) {
   adminApp = initializeApp();
