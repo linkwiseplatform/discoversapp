@@ -1,4 +1,3 @@
-
 # Settings for Backend (on Cloud Run).
 # See https://firebase.google.com/docs/app-hosting/configure#cloud-run
 runConfig:
@@ -7,3 +6,20 @@ runConfig:
   # concurrency: 80
   # cpu: 1
   # memoryMiB: 512
+  environment:
+    - variable: NEXT_PUBLIC_KAKAO_REDIRECT_URI
+      value: "https://discoversapp.firebaseapp.com/auth/kakao/processing"
+    - variable: NEXT_PUBLIC_KAKAO_REST_API_KEY
+      secret: true
+    - variable: KAKAO_CLIENT_SECRET
+      secret: true
+    - variable: FIREBASE_PRIVATE_KEY
+      secret: true
+
+# Settings for the build process.
+# See https://firebase.google.com/docs/app-hosting/configure#build
+buildConfig:
+  # You can specify a custom build command here.
+  # command: "npm run build"
+  # You can also specify a custom branch to build from.
+  # branch: "main"
