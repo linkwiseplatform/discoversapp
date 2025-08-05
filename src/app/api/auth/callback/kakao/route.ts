@@ -1,8 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps, App } from 'firebase-admin/app';
+import { initializeApp, getApps, App, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { credential } from 'firebase-admin';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
@@ -11,7 +10,10 @@ const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 // Initialize Firebase Admin SDK if not already initialized
 let adminApp: App;
 if (!getApps().length) {
-  adminApp = initializeApp();
+  adminApp = initializeApp({
+    credential: applicationDefault(),
+    projectId: 'discoversapp',
+  });
 } else {
   adminApp = getApps()[0];
 }
