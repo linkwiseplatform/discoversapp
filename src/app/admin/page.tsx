@@ -75,11 +75,9 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
   const undeletableAdminId = "kakao:4346782694";
 
   useEffect(() => {
-    const defaultAdmins = {
-        'kakao:4346782694': { id: 'kakao:4346782694', name: '강선주' }
-    };
+    const defaultAdmin = { 'kakao:4346782694': { id: 'kakao:4346782694', name: '강선주' } };
     if (isDevelopment) {
-      setAdmins({ ...defaultAdmins, 'dev-id': {id: 'dev-user', name: '개발자' }});
+      setAdmins({ ...defaultAdmin, 'dev-id': {id: 'dev-user', name: '개발자' }});
       setConfig(DEFAULT_CONFIG);
       return;
     }
@@ -94,9 +92,8 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
         if (adminSnapshot.exists() && Object.keys(adminSnapshot.val()).length > 0) {
           setAdmins(adminSnapshot.val());
         } else {
-           setAdmins(defaultAdmins);
-           // If no admins exist, set the default one in the database as well
-           await set(adminRef, defaultAdmins);
+           setAdmins(defaultAdmin);
+           await set(adminRef, defaultAdmin);
         }
         
         let fetchedConfig: GameConfig;
@@ -380,7 +377,7 @@ function AdminDashboard({ currentUser }: { currentUser: User }) {
                                             <DialogTitle>정말로 초기화하시겠습니까?</DialogTitle>
                                             <DialogDescription>
                                                 {u.name}님의 데이터를 삭제합니다. 이 작업은 되돌릴 수 없습니다.
-                                            </Description>
+                                            </DialogDescription>
                                         </DialogHeader>
                                         <DialogFooter>
                                             <DialogClose asChild>
@@ -457,3 +454,5 @@ export default function AdminPage() {
 
   return <Page />;
 }
+
+    
