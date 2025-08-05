@@ -1,14 +1,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { 
   onAuthStateChanged, 
   signOut, 
   User,
-  OAuthProvider,
-  signInWithPopup,
+  signInWithCustomToken,
   AuthError
 } from 'firebase/auth';
 import { ref, get, set, update } from 'firebase/database';
@@ -17,10 +16,6 @@ import { useToast } from './use-toast';
 import { useRouter } from 'next/navigation';
 
 export type { User };
-
-// provider를 훅의 바깥이나 최상단에서 한 번만 생성합니다.
-// 이렇게 하면 앱 전체에서 안정적인 단일 인스턴스를 사용하게 됩니다.
-const kakaoProvider = new OAuthProvider('oidc.kakao');
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -70,26 +65,29 @@ export function useAuth() {
     return () => unsubscribe();
   }, [toast]);
 
-  const loginWithKakao = async (isAdminLogin: boolean = false) => {
-    try {
-      const result = await signInWithPopup(auth, kakaoProvider);
-      // User is signed in.
-      toast({ title: "로그인 성공!", description: `${result.user.displayName}님 환영합니다.` });
-      router.replace(isAdminLogin ? '/admin' : '/quests');
-    } catch (error) {
-      const authError = error as AuthError;
-      console.error("Kakao OIDC sign-in failed:", authError);
-
-      // 사용자가 팝업을 닫는 등 일반적인 오류는 무시합니다.
-      if (authError.code !== 'auth/popup-closed-by-user' && authError.code !== 'auth/cancelled-popup-request') {
-        toast({
-          title: "로그인 실패",
-          description: "카카오 로그인 중 오류가 발생했습니다. 다시 시도해주세요.",
-          variant: "destructive"
-        });
-      }
-    }
+  const loginWithKakao = (isAdminLogin: boolean = false) => {
+    sessionStorage.setItem('isAdminLogin', isAdminLogin.toString());
+    const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI}&response_type=code`;
+    window.location.href = KAKAO_AUTH_URL;
   };
+  
+  const customTokenSignIn = useCallback(async (token: string) => {
+    try {
+      const result = await signInWithCustomToken(auth, token);
+      toast({ title: "로그인 성공!", description: `${result.user.displayName}님 환영합니다.` });
+      const isAdminLogin = sessionStorage.getItem('isAdminLogin') === 'true';
+      sessionStorage.removeItem('isAdminLogin');
+      router.replace(isAdminLogin ? '/admin' : '/quests');
+    } catch(error) {
+      console.error("Custom token sign-in failed:", error);
+      toast({
+          title: "로그인 실패",
+          description: "Firebase 인증에 실패했습니다.",
+          variant: "destructive"
+      });
+      router.replace('/');
+    }
+  }, [router, toast]);
 
   const logout = async () => {
     try {
@@ -105,5 +103,5 @@ export function useAuth() {
     }
   };
 
-  return { user, loading, isAdmin, isAdminLoading, loginWithKakao, logout };
+  return { user, loading, isAdmin, isAdminLoading, loginWithKakao, customTokenSignIn, logout };
 }
