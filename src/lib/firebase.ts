@@ -8,7 +8,6 @@ import { getDatabase } from 'firebase/database';
 export const firebaseConfig = {
   apiKey: "AIzaSyAF6_rVv7BXSKRv7VTsJaGbCemoOO7Ir3Q",
   authDomain: "discoversapp.firebaseapp.com",
-  projectId: "discoversapp",
   storageBucket: "discoversapp.firebasestorage.app",
   messagingSenderId: "207214786584",
   appId: "1:207214786584:web:a3f9687b3072c7fae06b6d",
