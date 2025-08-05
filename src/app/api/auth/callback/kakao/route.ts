@@ -19,14 +19,15 @@ if (!getApps().length) {
 const adminAuth = getAuth(adminApp);
 
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
+    const code = req.nextUrl.searchParams.get('code');
+    const isAdmin = req.nextUrl.searchParams.get('admin');
+
+    if (!code) {
+        return NextResponse.json({ error: 'Authorization code not provided' }, { status: 400 });
+    }
+
     try {
-        const { code } = await req.json();
-
-        if (!code) {
-            return NextResponse.json({ error: 'Authorization code not provided' }, { status: 400 });
-        }
-
         // 1. Exchange authorization code for access token
         const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
             method: 'POST',
@@ -88,31 +89,26 @@ export async function POST(req: NextRequest) {
             }
         }
         
-        // 4. Create custom token
+        // 4. Create custom token and redirect
         const customToken = await adminAuth.createCustomToken(uid);
-
-        return NextResponse.json({ token: customToken, user: { uid, displayName, photoURL } });
-
-    } catch (error: any) {
-        console.error('Auth callback internal error:', error);
-        return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
-    }
-}
-
-export async function GET(req: NextRequest) {
-    const code = req.nextUrl.searchParams.get('code');
-    const isAdmin = req.nextUrl.searchParams.get('admin');
-
-    if (code) {
-        // Redirect to the appropriate frontend page with the code.
-        const targetUrl = new URL(isAdmin ? '/admin' : '/auth/kakao', req.nextUrl.origin);
-        targetUrl.searchParams.set('code', code);
+        
+        const targetUrl = new URL(isAdmin ? '/admin' : '/auth/kakao/processing', req.nextUrl.origin);
+        targetUrl.searchParams.set('token', customToken);
+        targetUrl.searchParams.set('displayName', displayName);
+        targetUrl.searchParams.set('uid', uid);
         
         if (isAdmin) {
             targetUrl.searchParams.set('admin', 'true');
         }
+
         return NextResponse.redirect(targetUrl);
+
+    } catch (error: any) {
+        console.error('Auth callback internal error:', error);
+        
+        const errorUrl = new URL('/auth/error', req.nextUrl.origin);
+        errorUrl.searchParams.set('error', 'Internal Server Error');
+        errorUrl.searchParams.set('details', error.message);
+        return NextResponse.redirect(errorUrl);
     }
-    
-    return NextResponse.json({ error: 'Authorization code not found in GET request' }, { status: 400 });
 }

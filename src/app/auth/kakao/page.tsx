@@ -47,54 +47,18 @@ function AuthCallback() {
     }
 
     if (code) {
-      const handleLogin = async () => {
-        try {
-          const response = await fetch(`/api/auth/callback/kakao`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code })
-          });
-          
-          const responseBody = await response.json();
-
-          if (!response.ok) {
-            console.error("Token exchange failed:", responseBody);
-            throw new Error(responseBody.details || `로그인 서버 오류: ${response.status} - ${responseBody.error || 'Unknown error'}`);
-          }
-
-          const { token, user: apiUser } = responseBody;
-          const loggedInUser = await login(token);
-
-          if (loggedInUser) {
-            const userProgressRef = ref(db, `userProgress/${loggedInUser.uid}`);
-            const snapshot = await get(userProgressRef);
-
-            if (!snapshot.exists()) {
-              await set(userProgressRef, {
-                uid: loggedInUser.uid,
-                name: apiUser.displayName || `탐험가${loggedInUser.uid.substring(0,4)}`,
-                unlockedStages: 0,
-                lastPlayed: Date.now(),
-              });
-            }
-            router.replace(isAdminLogin ? '/admin' : '/quests');
-          } else {
-             router.replace('/');
-          }
-        } catch (err: any) {
-          console.error('Login process failed', err);
-          alert(`로그인에 실패했습니다: ${err.message}`);
-          router.replace('/');
-        }
-      };
-      handleLogin();
+       // The server now handles the code exchange and redirects to a processing page
+       // with the token. This component might not be needed anymore if the redirect
+       // goes straight to /auth/kakao/processing. However, keeping it for now
+       // in case the KAKAO_AUTH_URL brings the user here first.
+       // The logic will be handled by KakaoAuthPageInternal.
     }
   }, [searchParams, router, login, isAdminLogin]);
 
   return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="mt-4 text-muted-foreground">로그인 중입니다...</p>
+          <p className="mt-4 text-muted-foreground">로그인 처리 중...</p>
       </div>
   );
 }
@@ -111,5 +75,13 @@ function KakaoAuthPageInternal() {
   const searchParams = useSearchParams();
   const code = searchParams.get('code');
 
-  return code ? <AuthCallback /> : <KakaoLogin />;
+  // If there's a code, it means we've just come back from Kakao.
+  // The server-side route will handle this and redirect to /auth/kakao/processing
+  // This component will briefly show a loading spinner.
+  if (code) {
+      return <AuthCallback />;
+  }
+
+  // If there's no code, it means we need to initiate the login.
+  return <KakaoLogin />;
 }
