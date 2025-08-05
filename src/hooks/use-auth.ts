@@ -9,10 +9,11 @@ import {
   signOut, 
   User,
   OAuthProvider,
-  getRedirectResult
+  getRedirectResult,
+  AuthError
 } from 'firebase/auth';
-import { ref, get, set } from 'firebase/database';
-import type { Admin } from '@/lib/types';
+import { ref, get, set, update } from 'firebase/database';
+import type { Admin, UserProgress } from '@/lib/types';
 import { useToast } from './use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -32,18 +33,11 @@ export function useAuth() {
         setUser(user);
         setIsAdminLoading(true);
         try {
-          // Check admin status
           const adminsRef = ref(db, 'admins');
           const snapshot = await get(adminsRef);
-          if (snapshot.exists()) {
-            const admins = snapshot.val() as Record<string, Admin>;
-            const isAdminUser = Object.values(admins).some(admin => admin.id === user.uid);
-            setIsAdmin(isAdminUser);
-          } else {
-            setIsAdmin(false);
-          }
+          const isAdminUser = snapshot.exists() && Object.values(snapshot.val() as Record<string, Admin>).some(admin => admin.id === user.uid);
+          setIsAdmin(isAdminUser);
           
-          // Check and set user progress
           const userProgressRef = ref(db, `userProgress/${user.uid}`);
           const progressSnapshot = await get(userProgressRef);
           if (!progressSnapshot.exists()) {
@@ -54,9 +48,8 @@ export function useAuth() {
                 lastPlayed: Date.now(),
               });
           } else {
-              await set(ref(db, `userProgress/${user.uid}/lastPlayed`), Date.now());
+              await update(userProgressRef, { lastPlayed: Date.now() });
           }
-
         } catch (error) {
           console.error("Error during auth state processing:", error);
           setIsAdmin(false);
@@ -78,36 +71,60 @@ export function useAuth() {
     try {
       sessionStorage.setItem('isAdminLogin', String(isAdminLogin));
       const provider = new OAuthProvider('oidc.kakao');
+      // You can add custom parameters or scopes here if needed
+      // provider.addScope('profile');
+      // provider.setCustomParameters({ login_hint: 'user@example.com' });
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
-      console.error("Kakao OIDC sign-in failed:", error);
-       router.push(`/auth/error?error=${encodeURIComponent(error.code)}&details=${encodeURIComponent(error.message)}`);
+      console.error("Kakao OIDC sign-in initiation failed:", error);
+      toast({
+        title: "로그인 시작 실패",
+        description: error.message,
+        variant: "destructive"
+      });
     }
-  }, [router]);
+  }, []);
   
   useEffect(() => {
     const processRedirect = async () => {
         try {
             const result = await getRedirectResult(auth);
             if (result) {
+                // Successfully signed in.
+                const credential = OAuthProvider.credentialFromResult(result);
+                // You can get the OAuth access token and ID Token here.
+                // const accessToken = credential.accessToken;
+                // const idToken = credential.idToken;
+
                 const isAdminLogin = sessionStorage.getItem('isAdminLogin') === 'true';
                 sessionStorage.removeItem('isAdminLogin');
                 
                 toast({ title: "로그인 성공!", description: `${result.user.displayName}님 환영합니다.` });
                 router.replace(isAdminLogin ? '/admin' : '/quests');
             }
-        } catch(error: any) {
-            console.error("Error getting redirect result", error);
-            // Avoid showing toast for unsupported web storage which can be noisy.
-            if (error.code !== 'auth/web-storage-unsupported' && error.code !== 'auth/internal-error') {
-              router.push(`/auth/error?error=${encodeURIComponent(error.code)}&details=${encodeURIComponent(error.message)}`);
+        } catch(error) {
+            const authError = error as AuthError;
+            console.error("Error getting redirect result", authError);
+            
+            // Handle specific errors or show a generic message
+            if (authError.code !== 'auth/web-storage-unsupported' && authError.code !== 'auth/internal-error') {
+               toast({
+                   title: "로그인 처리 중 오류 발생",
+                   description: authError.message,
+                   variant: "destructive"
+               });
+               router.push('/');
             }
         }
     };
     
-    processRedirect();
+    // Only run this on initial load
+    if(!user) {
+        processRedirect();
+    }
     
-  }, [toast, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth, toast, router]);
 
   const logout = useCallback(async () => {
     try {
@@ -115,8 +132,13 @@ export function useAuth() {
       router.push('/');
     } catch (error) {
       console.error("Sign-out failed:", error);
+      toast({
+          title: "로그아웃 실패",
+          description: "로그아웃 중 문제가 발생했습니다.",
+          variant: "destructive"
+      });
     }
-  }, [router]);
+  }, [router, toast]);
 
   return { user, loading, isAdmin, isAdminLoading, loginWithKakao, logout };
 }
