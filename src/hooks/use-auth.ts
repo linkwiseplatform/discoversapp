@@ -19,6 +19,9 @@ import { useRouter } from 'next/navigation';
 
 export type { User };
 
+// provider를 훅의 바깥이나 최상단에서 한 번만 생성합니다.
+const kakaoProvider = new OAuthProvider('oidc.kakao');
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,8 +73,8 @@ export function useAuth() {
   const loginWithKakao = useCallback(async (isAdminLogin: boolean = false) => {
     try {
       sessionStorage.setItem('isAdminLogin', String(isAdminLogin));
-      const provider = new OAuthProvider('oidc.kakao');
-      await signInWithRedirect(auth, provider);
+      // 매번 새로 생성하는 대신, 미리 생성된 provider를 사용합니다.
+      await signInWithRedirect(auth, kakaoProvider);
     } catch (error: any) {
       console.error("Kakao OIDC sign-in initiation failed:", error);
       toast({
@@ -80,13 +83,14 @@ export function useAuth() {
         variant: "destructive"
       });
     }
-  }, []);
+  }, [toast]);
   
   useEffect(() => {
     const processRedirect = async () => {
         try {
             const result = await getRedirectResult(auth);
             if (result) {
+                const credential = OAuthProvider.credentialFromResult(result);
                 // User is signed in.
                 const isAdminLogin = sessionStorage.getItem('isAdminLogin') === 'true';
                 sessionStorage.removeItem('isAdminLogin');
@@ -97,12 +101,12 @@ export function useAuth() {
         } catch(error) {
             const authError = error as AuthError;
             console.error("Error getting redirect result", authError);
-            
-            // Handle specific errors or show a generic message
-            if (authError.code !== 'auth/web-storage-unsupported' && authError.code !== 'auth/internal-error') {
+
+            // 로그인 취소 등의 일반적인 오류는 무시하고, 심각한 오류만 사용자에게 알립니다.
+            if (authError.code !== 'auth/cancelled-popup-request') {
                toast({
                    title: "로그인 처리 중 오류 발생",
-                   description: "로그인 결과를 처리하는 중 오류가 발생했습니다. 다시 로그인해주세요.",
+                   description: authError.message || "로그인 결과를 처리하는 중 오류가 발생했습니다. 다시 로그인해주세요.",
                    variant: "destructive"
                });
                router.push('/');
@@ -110,7 +114,6 @@ export function useAuth() {
         }
     };
     
-    // Only run this on initial load to handle the redirect
     processRedirect();
     
   // eslint-disable-next-line react-hooks/exhaustive-deps
