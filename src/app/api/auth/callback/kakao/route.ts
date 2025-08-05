@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { ref, get } from 'firebase-admin/database';
+import { ref, get } from 'firebase/database';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
 const KAKAO_CLIENT_SECRET = 'M3TG2xVZwEw4xaISTzuDZmht5TYCXFpm';
@@ -105,10 +105,10 @@ export async function GET(req: NextRequest) {
         const targetUrl = new URL(isAdminLogin ? '/admin' : '/auth/kakao/processing', req.nextUrl.origin);
         targetUrl.searchParams.set('token', customToken);
         targetUrl.searchParams.set('displayName', displayName);
-        targetUrl.searchParams.set('uid', uid);
+        targetUrl.search_params.set('uid', uid);
         
         if (isAdminLogin) {
-            targetUrl.searchParams.set('admin', 'true');
+            targetUrl.search_params.set('admin', 'true');
         }
 
         return NextResponse.redirect(targetUrl);
