@@ -1,19 +1,18 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { 
   onAuthStateChanged, 
-  signInWithRedirect, 
   signOut, 
   User,
   OAuthProvider,
-  getRedirectResult,
+  signInWithPopup,
   AuthError
 } from 'firebase/auth';
 import { ref, get, set, update } from 'firebase/database';
-import type { Admin, UserProgress } from '@/lib/types';
+import type { Admin } from '@/lib/types';
 import { useToast } from './use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -71,56 +70,28 @@ export function useAuth() {
     return () => unsubscribe();
   }, [toast]);
 
-  const loginWithKakao = useCallback(async (isAdminLogin: boolean = false) => {
+  const loginWithKakao = async (isAdminLogin: boolean = false) => {
     try {
-      sessionStorage.setItem('isAdminLogin', String(isAdminLogin));
-      // 매번 새로 생성하는 대신, 미리 생성된 provider를 사용합니다.
-      await signInWithRedirect(auth, kakaoProvider);
-    } catch (error: any) {
-      console.error("Kakao OIDC sign-in initiation failed:", error);
-      toast({
-        title: "로그인 시작 실패",
-        description: "카카오 로그인 페이지로 이동하는 데 실패했습니다. 잠시 후 다시 시도해주세요.",
-        variant: "destructive"
-      });
+      const result = await signInWithPopup(auth, kakaoProvider);
+      // User is signed in.
+      toast({ title: "로그인 성공!", description: `${result.user.displayName}님 환영합니다.` });
+      router.replace(isAdminLogin ? '/admin' : '/quests');
+    } catch (error) {
+      const authError = error as AuthError;
+      console.error("Kakao OIDC sign-in failed:", authError);
+
+      // 사용자가 팝업을 닫는 등 일반적인 오류는 무시합니다.
+      if (authError.code !== 'auth/popup-closed-by-user' && authError.code !== 'auth/cancelled-popup-request') {
+        toast({
+          title: "로그인 실패",
+          description: "카카오 로그인 중 오류가 발생했습니다. 다시 시도해주세요.",
+          variant: "destructive"
+        });
+      }
     }
-  }, [toast]);
-  
-  useEffect(() => {
-    const processRedirect = async () => {
-        try {
-            const result = await getRedirectResult(auth);
-            if (result) {
-                const credential = OAuthProvider.credentialFromResult(result);
-                // User is signed in.
-                const isAdminLogin = sessionStorage.getItem('isAdminLogin') === 'true';
-                sessionStorage.removeItem('isAdminLogin');
-                
-                toast({ title: "로그인 성공!", description: `${result.user.displayName}님 환영합니다.` });
-                router.replace(isAdminLogin ? '/admin' : '/quests');
-            }
-        } catch(error) {
-            const authError = error as AuthError;
-            console.error("Error getting redirect result", authError);
+  };
 
-            // 로그인 취소 등의 일반적인 오류는 무시하고, 심각한 오류만 사용자에게 알립니다.
-            if (authError.code !== 'auth/cancelled-popup-request') {
-               toast({
-                   title: "로그인 처리 중 오류 발생",
-                   description: authError.message || "로그인 결과를 처리하는 중 오류가 발생했습니다. 다시 로그인해주세요.",
-                   variant: "destructive"
-               });
-               router.push('/');
-            }
-        }
-    };
-    
-    processRedirect();
-    
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast, router]);
-
-  const logout = useCallback(async () => {
+  const logout = async () => {
     try {
       await signOut(auth);
       router.push('/');
@@ -132,7 +103,7 @@ export function useAuth() {
           variant: "destructive"
       });
     }
-  }, [router, toast]);
+  };
 
   return { user, loading, isAdmin, isAdminLoading, loginWithKakao, logout };
 }
