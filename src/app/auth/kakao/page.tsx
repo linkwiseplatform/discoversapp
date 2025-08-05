@@ -9,7 +9,7 @@ import { ref, set, get } from 'firebase/database';
 import { Loader2 } from 'lucide-react';
 
 const KAKAO_REST_API_KEY = '5709fa620b0746a1eda6be7699017fa1';
-const KAKAO_REDIRECT_URI = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI || 'https://discovers-2a970.web.app/api/auth/callback/kakao';
+const KAKAO_REDIRECT_URI = 'https://www.viscope.kr/api/auth/callback/kakao';
 
 function KakaoLogin() {
   const searchParams = useSearchParams();
