@@ -10,7 +10,7 @@ const serviceAccount = {
   "type": "service_account",
   "project_id": "discoversapp",
   "private_key_id": "b18b57743d04369e5d3264426b3e6e87f17b385e",
-  "private_key": process.env.FIREBASE_PRIVATE_KEY,
+  "private_key": process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   "client_email": "firebase-adminsdk-3y0k1@discoversapp.iam.gserviceaccount.com",
   "client_id": "104961732971217086884",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",

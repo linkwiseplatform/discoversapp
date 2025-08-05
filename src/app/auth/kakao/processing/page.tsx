@@ -2,18 +2,30 @@
 'use client';
 
 import { useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
 function ProcessingComponent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const { customTokenSignIn } = useAuth();
     const { toast } = useToast();
 
     useEffect(() => {
         const code = searchParams.get('code');
+        const error = searchParams.get('error');
+
+        if (error) {
+            toast({
+                title: '카카오 인증 실패',
+                description: searchParams.get('error_description') || '알 수 없는 오류가 발생했습니다.',
+                variant: 'destructive'
+            });
+            router.replace('/');
+            return;
+        }
 
         if (code) {
             const exchangeCodeForToken = async () => {
@@ -25,7 +37,8 @@ function ProcessingComponent() {
                     });
                     
                     if (!response.ok) {
-                        throw new Error('Failed to exchange code for token');
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to exchange code for token');
                     }
                     
                     const { firebaseToken } = await response.json();
@@ -36,28 +49,22 @@ function ProcessingComponent() {
                          throw new Error('Firebase token not received');
                     }
 
-                } catch (error) {
+                } catch (error: any) {
                     console.error(error);
                     toast({
                         title: '인증 실패',
-                        description: '카카오 인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+                        description: error.message || '카카오 인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
                         variant: 'destructive',
                     });
-                     // window.location.href = '/';
+                    router.replace('/');
                 }
             };
             exchangeCodeForToken();
         } else {
-             const error = searchParams.get('error');
-             toast({
-                title: '카카오 인증 실패',
-                description: error || '알 수 없는 오류가 발생했습니다.',
-                variant: 'destructive'
-             });
-             // window.location.href = '/';
+             router.replace('/');
         }
 
-    }, [searchParams, customTokenSignIn, toast]);
+    }, [searchParams, customTokenSignIn, toast, router]);
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen">
@@ -66,7 +73,6 @@ function ProcessingComponent() {
         </div>
     );
 }
-
 
 export default function KakaoProcessingPage() {
     return (

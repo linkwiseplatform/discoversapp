@@ -8,7 +8,6 @@ import {
   signOut, 
   User,
   signInWithCustomToken,
-  AuthError
 } from 'firebase/auth';
 import { ref, get, set, update } from 'firebase/database';
 import type { Admin } from '@/lib/types';
