@@ -60,7 +60,7 @@ export default function Home() {
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, loginWithKakao } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -148,11 +148,9 @@ export default function Home() {
           </CardHeader>
           <CardContent className="text-center">
              {showLogin ? (
-                <Button asChild className="w-full gap-2 h-12 text-lg">
-                  <Link href="/auth/kakao">
-                    <KakaoIcon />
-                    카카오 로그인으로 시작
-                  </Link>
+                <Button onClick={() => loginWithKakao(false)} className="w-full gap-2 h-12 text-lg">
+                  <KakaoIcon />
+                  카카오 로그인으로 시작
                 </Button>
              ) : (
               <div className="space-y-4">

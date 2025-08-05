@@ -37,6 +37,8 @@ const KakaoIcon = () => (
 );
 
 function AdminLoginPage() {
+  const { loginWithKakao } = useAuth();
+  
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-sm">
@@ -47,11 +49,9 @@ function AdminLoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button asChild className="w-full gap-2">
-            <Link href="/auth/kakao?admin=true">
-                <KakaoIcon />
-                카카오 계정으로 로그인
-            </Link>
+          <Button onClick={() => loginWithKakao(true)} className="w-full gap-2">
+            <KakaoIcon />
+            카카오 계정으로 로그인
           </Button>
         </CardContent>
       </Card>
