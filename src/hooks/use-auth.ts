@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 export type { User };
 
 // provider를 훅의 바깥이나 최상단에서 한 번만 생성합니다.
+// 이렇게 하면 앱 전체에서 안정적인 단일 인스턴스를 사용하게 됩니다.
 const kakaoProvider = new OAuthProvider('oidc.kakao');
 
 export function useAuth() {
