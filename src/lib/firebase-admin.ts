@@ -9,8 +9,10 @@ import serviceAccount from './firebase-service-account.json';
 let app: App;
 
 if (!getApps().length) {
+    // The type assertion is necessary because the service account is a plain object
+    // from a .ts file, not a JSON module.
     app = initializeApp({
-        credential: cert(serviceAccount),
+        credential: cert(serviceAccount as any),
         databaseURL: "https://discoversapp-default-rtdb.asia-southeast1.firebasedatabase.app",
     });
 } else {
