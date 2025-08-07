@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Authorization code not provided' }, { status: 400 });
     }
 
-    // 1. 인증 코드로 카카오 액세스 토큰 받기
+    // 1. Exchange authorization code for Kakao access token
     const tokenResponse = await axios.post(
       'https://kauth.kakao.com/oauth/token',
       new URLSearchParams({
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     );
     const { access_token } = tokenResponse.data;
 
-    // 2. 액세스 토큰으로 카카오 사용자 정보 받기
+    // 2. Use access token to get Kakao user info
     const userResponse = await axios.get(
         'https://kapi.kakao.com/v2/user/me', 
         {
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const displayName = kakaoUser.properties.nickname;
     const photoURL = kakaoUser.properties.profile_image;
 
-    // 3. Firebase에 사용자 정보 업데이트 또는 생성
+    // 3. Update or create the user in Firebase Auth
     await adminAuth.updateUser(uid, {
         displayName: displayName,
         photoURL: photoURL,
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         throw error;
     });
 
-    // 4. Firebase 커스텀 토큰 생성
+    // 4. Create a Firebase custom token
     const firebaseToken = await adminAuth.createCustomToken(uid);
     
     return NextResponse.json({ firebaseToken });
