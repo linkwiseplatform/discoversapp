@@ -44,19 +44,22 @@ export async function POST(request: Request) {
     const photoURL = kakaoUser.properties.profile_image;
 
     // 3. Update or create the user in Firebase Auth
-    await adminAuth.updateUser(uid, {
-        displayName: displayName,
-        photoURL: photoURL,
-    }).catch(async (error) => {
+    try {
+        await adminAuth.updateUser(uid, {
+            displayName: displayName,
+            photoURL: photoURL,
+        });
+    } catch (error: any) {
         if (error.code === 'auth/user-not-found') {
-            return adminAuth.createUser({
+            await adminAuth.createUser({
                 uid: uid,
                 displayName: displayName,
                 photoURL: photoURL,
             });
+        } else {
+            throw error;
         }
-        throw error;
-    });
+    }
 
     // 4. Create a Firebase custom token
     const firebaseToken = await adminAuth.createCustomToken(uid);
