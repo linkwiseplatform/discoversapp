@@ -10,7 +10,7 @@ runConfig:
     - variable: NEXT_PUBLIC_KAKAO_REDIRECT_URI
       value: "https://discoversapp.firebaseapp.com/auth/kakao/processing"
     - variable: NEXT_PUBLIC_KAKAO_REST_API_KEY
-      secret: true
+      value: "71f050ce69a41649cfdfb1a434a38098"
     - variable: KAKAO_CLIENT_SECRET
       secret: true
     - variable: FIREBASE_PRIVATE_KEY

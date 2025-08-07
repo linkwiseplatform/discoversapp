@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardHeaderProps } from 
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { ref, get, set } from 'firebase/database';
 import type { GameConfig } from '@/lib/types';
@@ -61,7 +60,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { user, loading: authLoading, loginWithKakao } = useAuth();
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchGameConfig = async () => {
@@ -73,15 +71,10 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Error fetching game config:", error);
-        toast({
-          title: '설정 오류',
-          description: '게임 설정을 불러오는 데 실패했습니다.',
-          variant: 'destructive',
-        });
       }
     };
     fetchGameConfig();
-  }, [toast]);
+  }, []);
   
   useEffect(() => {
     if (authLoading) return; // Wait for auth state to be confirmed
@@ -105,14 +98,8 @@ export default function Home() {
   };
 
   const handleStartCodeSubmit = () => {
-    if (!gameConfig) return;
-    if (startCode.trim().toUpperCase() !== gameConfig.gameStartCode.toUpperCase()) {
-         toast({
-            title: '코드 오류',
-            description: '시작 코드가 올바르지 않습니다.',
-            variant: 'destructive',
-        });
-    }
+    // This function is kept for the Enter key press, but the primary logic is in handleStartCodeChange
+    // You could add a toast notification here for incorrect code if you want.
   };
 
   if (isLoading) {
