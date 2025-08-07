@@ -11,7 +11,7 @@ import {
 } from 'firebase/auth';
 import { ref, get, set, update } from 'firebase/database';
 import type { Admin } from '@/lib/types';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
 export type { User };
