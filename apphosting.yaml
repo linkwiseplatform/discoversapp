@@ -1,4 +1,3 @@
-
 # Settings for Backend (on Cloud Run).
 # See https://firebase.google.com/docs/app-hosting/configure#cloud-run
 runConfig:
@@ -8,14 +7,18 @@ runConfig:
   # cpu: 1
   # memoryMiB: 512
   environment:
+    # These variables will be populated from the secrets you've set in Google Cloud Secret Manager.
+    # Make sure the secret names here exactly match the names you used in Secret Manager.
     - variable: NEXT_PUBLIC_KAKAO_REDIRECT_URI
-      value: "https://discoversapp.firebaseapp.com/auth/kakao/processing"
+      secret: NEXT_PUBLIC_KAKAO_REDIRECT_URI
+    - variable: NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY
+      secret: NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY
     - variable: NEXT_PUBLIC_KAKAO_REST_API_KEY
-      value: "71f050ce69a41649cfdfb1a434a38098"
+      secret: NEXT_PUBLIC_KAKAO_REST_API_KEY
     - variable: KAKAO_CLIENT_SECRET
-      secret: true
+      secret: KAKAO_CLIENT_SECRET
     - variable: FIREBASE_PRIVATE_KEY
-      secret: true
+      secret: FIREBASE_PRIVATE_KEY
 
 # Settings for the build process.
 # See https://firebase.google.com/docs/app-hosting/configure#build
